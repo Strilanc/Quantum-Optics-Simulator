@@ -12,6 +12,23 @@ internal static class Util {
     public static Complex Dot(this IReadOnlyList<Complex> vector1, IReadOnlyList<Complex> vector2) {
         return vector1.Zip(vector2, (e1, e2) => e1*e2).Sum();
     }
+    public static string ToPrettyString(this Complex c) {
+        var r = c.Real;
+        var i = c.Imaginary;
+        if (i == 0) return String.Format("{0:0.###}", r);
+        if (r == 0)
+            return i == 1 ? "i"
+                 : i == -1 ? "-i"
+                 : String.Format("{0:0.###}i", i);
+        return String.Format(
+            "{0:0.###}{1}{2}",
+            r == 0 ? (object)"" : r,
+            i < 0 ? "-" : "+",
+            i == 1 || i == -1 ? "i" : String.Format("{0:0.###}i", Math.Abs(i)));
+    }
+    public static double SquaredMagnitude(this Complex complex) {
+        return complex.Magnitude * complex.Magnitude;
+    }
     public static int? IndexOf<T>(this IReadOnlyList<T> list, T item) {
         return list.Count
                    .Range()
