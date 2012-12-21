@@ -5,6 +5,12 @@ using System.Linq;
 using System.Numerics;
 using Strilanc.LinqToCollections;
 
+/// <summary>
+/// A quantum superposition of values.
+/// Possible values are paired with a complex probability amplitude.
+/// The real probability of a value is the squared magnitude of its probability.
+/// Values paired with a probability amplitude of 0 are omitted.
+/// </summary>
 [DebuggerDisplay("{ToString()}")]
 public struct Superposition<T> {
     private readonly IReadOnlyDictionary<T, Complex> _state;
@@ -44,6 +50,10 @@ public struct Superposition<T> {
             .Select(e => new KeyValuePair<T, Complex>(e.Key, e.Value * Math.Sqrt(0.5))));
     }
 
+    /// <summary>
+    /// Fair warning: this function (if it ran in constant time) is strictly more powerful than a quantum computer.
+    /// Try to ensure the defined transition corresponds to a unitary matrix, or at least could be by adding sacrifical bits to trash.
+    /// </summary>
     public Superposition<T> Transform(Func<T, Superposition<T>> transitions) {
         return FromFragments(
             Amplitudes
