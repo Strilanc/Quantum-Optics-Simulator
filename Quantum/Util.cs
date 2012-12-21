@@ -38,6 +38,9 @@ internal static class Util {
             return String.Format("{0}: {1}", e.Key, e.Value);
         }).Where(e => e != null));
     }
+    public static Named<T> Named<T>(this T value, string name) {
+        return new Named<T>(value, name);
+    }
     public static double SquaredMagnitude(this Complex complex) {
         return complex.Magnitude * complex.Magnitude;
     }
