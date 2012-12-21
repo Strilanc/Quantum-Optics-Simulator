@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
+  <metadata>
+    <id>Strilanc.LinqToCollections</id>
+    <version>1.0.0</version>
+    <title>Linq to Collections</title>
+    <authors>Craig Gidney</authors>
+    <owners>Craig Gidney</owners>
+    <projectUrl>https://github.com/Strilanc/LinqToCollections</projectUrl>
+    <iconUrl>http://i.imgur.com/MbBB1.png</iconUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Implements types and extension methods for transforming IReadOnlyList&lt;T&gt;, IReadOnlyCollection&lt;T&gt;, and IReadOnlyDictionary&lt;K,V&gt; in a functional style.
+
+For example, the library implements a Select method that ensures the result of 'from e in list select e * e' supports random access.</description>
+    <summary>Types and methods for lazily transforming readonly collections in a functional style.</summary>
+    <copyright>Public Domain</copyright>
+    <language>en-US</language>
+    <tags>linq collection list dictionary</tags>
+    <references>
+      <reference file="LinqToCollections.dll" />
+    </references>
+  </metadata>
+</package>
