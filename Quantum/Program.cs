@@ -1,115 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
-using Strilanc.Angle;
-using Strilanc.LinqToCollections;
 
 static class Program {
     static void Main(string[] args) {
-        Circuit0();
-        Circuit1();
         Circuit2();
-        //Func<double, ComplexMatrix> beamSplitterForeSlashLRUD = theta => ComplexMatrix.FromCellData(
-        ////i:L  R  U  D  //out
-        //    0, s, t, 0, //L
-        //    s, 0, 0, t, //R
-        //    t, 0, 0, s, //U
-        //    0, t, s, 0);//D
-    }
-    public static void Circuit0() {
-        // S--- 0 -----> A ---- 1 -----> C
-        //               |               |
-        //               2               4
-        //               |               |
-        //               v               v
-        //               B ------ 3 ---> D --- 5 --> F
-        //                               |
-        //                               6
-        //                               |
-        //                               v
-        //                               E
-
-        var SA = 0;
-        var AC = 1;
-        var AB = 2;
-        var BD = 3;
-        var CD = 4;
-        var DF = 5;
-        var DE = 6;
-        var EG = 7;
-        var FG = 8;
-        var GI = 9;
-        var GH = 10;
-        var expectToStayZero = 11;
-
-        var m = Complex.ImaginaryOne;
-        var s = Math.Sqrt(0.5);
-        var t = s * m;
-        var reg = QuantumInteger.FromPureValue(SA, 12);
-        var beamSplitterBackSlashLRUD = ComplexMatrix.FromCellData(
-            //i:L  R  U  D  //out
-            0, s, 0, t, //L
-            s, 0, t, 0, //R
-            0, t, 0, s, //U
-            t, 0, s, 0);//D
-        var mirrorBackSlashLRUD = ComplexMatrix.FromCellData(
-            //i:L  R  U  D  //out
-            0, 0, 0, m, //L
-            0, 0, m, 0, //R
-            0, m, 0, 0, //U
-            m, 0, 0, 0);//D
-        var reg3 = reg.ApplyOperationToSubset(beamSplitterBackSlashLRUD, new[] { SA, AC, expectToStayZero, AB });
-        var reg4 = reg3.ApplyOperationToSubset(mirrorBackSlashLRUD, new[] { AC, expectToStayZero, expectToStayZero, CD });
-        var reg5 = reg4.ApplyOperationToSubset(mirrorBackSlashLRUD, new[] { expectToStayZero, BD, AB, expectToStayZero });
-        var reg6 = reg5.ApplyOperationToSubset(beamSplitterBackSlashLRUD, new[] { BD, DF, CD, DE });
-        var reg7 = reg6.ApplyOperationToSubset(mirrorBackSlashLRUD, new[] { expectToStayZero, EG, DE, expectToStayZero });
-        var reg8 = reg7.ApplyOperationToSubset(mirrorBackSlashLRUD, new[] { DF, expectToStayZero, expectToStayZero, FG });
-        var reg9 = reg8.ApplyOperationToSubset(beamSplitterBackSlashLRUD, new[] { EG, GI, FG, GH });
-    }
-    public static void Circuit1() {
-        // S--- 0 -----> A ---- 1 -----> C
-        //               |               |
-        //               2               4
-        //               |               |
-        //               v               v
-        //               B ------ 3 ---> D --- 5 --> F
-        //                               |
-        //                               6
-        //                               |
-        //                               v
-        //                               E
-
-        var SA = 0;
-        var AC = 1;
-        var AB = 2;
-        var BD = 3;
-        var CD = 4;
-        var DF = 5;
-        var DE = 6;
-        var expectToStayZero = 7;
-
-        var m = Complex.ImaginaryOne;
-        var s = Math.Sqrt(0.5);
-        var t = s * m;
-        var reg = QuantumInteger.FromPureValue(SA, 8);
-        var beamSplitterBackSlashLRUD = ComplexMatrix.FromCellData(
-            //i:L  R  U  D  //out
-            0, s, 0, t, //L
-            s, 0, t, 0, //R
-            0, t, 0, s, //U
-            t, 0, s, 0);//D
-        var mirrorBackSlashLRUD = ComplexMatrix.FromCellData(
-            //i:L  R  U  D  //out
-            0, 0, 0, m, //L
-            0, 0, m, 0, //R
-            0, m, 0, 0, //U
-            m, 0, 0, 0);//D
-        var reg3 = reg.ApplyOperationToSubset(beamSplitterBackSlashLRUD, new[] { SA, AC, expectToStayZero, AB });
-        var reg4 = reg3.ApplyOperationToSubset(mirrorBackSlashLRUD, new[] { AC, expectToStayZero, expectToStayZero, CD });
-        var reg5 = reg4.ApplyOperationToSubset(mirrorBackSlashLRUD, new[] { expectToStayZero, BD, AB, expectToStayZero });
-        var reg6 = reg5.ApplyOperationToSubset(beamSplitterBackSlashLRUD, new[] { BD, DF, CD, DE });
     }
     public class CircuitNode {
         public string type;

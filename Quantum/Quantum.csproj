@@ -51,8 +51,6 @@
     <Compile Include="ClassicalRegister.cs" />
     <Compile Include="Math\ComplexVector.cs" />
     <Compile Include="Phys\Superposition.cs" />
-    <Compile Include="Phys\QuantumStruct.cs" />
-    <Compile Include="Phys\QuantumInteger.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Prog\Named.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
