@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Reflection;
 using Strilanc.LinqToCollections;
 
 internal static class Util {
@@ -25,6 +26,17 @@ internal static class Util {
             r == 0 ? (object)"" : r,
             i < 0 ? "-" : "+",
             i == 1 || i == -1 ? "i" : String.Format("{0:0.###}i", Math.Abs(i)));
+    }
+    public static string ReflectToString<T>(this T value) {
+        var fieldValues = typeof(T).GetFields()
+            .Select(e => new KeyValuePair<string, object>(e.Name, e.GetValue(value)));
+        var getterValues = typeof(T).GetProperties()
+            .Select(e => new KeyValuePair<string, object>(e.Name, e.GetValue(value)));
+        return String.Join(", ", fieldValues.Concat(getterValues).Select(e => {
+            if (Equals(e.Value, true)) return e.Key;
+            if (Equals(e.Value, false)) return null;
+            return String.Format("{0}: {1}", e.Key, e.Value);
+        }).Where(e => e != null));
     }
     public static double SquaredMagnitude(this Complex complex) {
         return complex.Magnitude * complex.Magnitude;

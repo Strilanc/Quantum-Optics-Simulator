@@ -16,6 +16,23 @@ static class Program {
         public T Pass;
         public T Reflect;
     }
+    public struct CircuitState {
+        public string Wire;
+        public bool Detect1;
+        public bool Detect2;
+        public bool Detect3;
+        public CircuitState With(string wire = null, bool? d1 = null, bool? d2 = null, bool? d3 = null) {
+            return new CircuitState {
+                Wire = wire ?? Wire,
+                Detect1 = d1 ?? this.Detect1,
+                Detect2 = d2 ?? this.Detect2,
+                Detect3 = d3 ?? this.Detect3
+            };
+        }
+        public override string ToString() {
+            return this.ReflectToString();
+        }
+    }
     public static void Circuit2() {
         // S--- 0 -----> A ---- 1 -----> C
         //               |               |
@@ -41,22 +58,21 @@ static class Program {
         var numAmps = 1 << 7;
         var z = Complex.Zero.Repeat(numAmps);
 
-        Func<string, string, Func<Tuple<string, bool>, Superposition<Tuple<string, bool>>>> reflect = (i, r) => w => {
-            if (!Equals(w.Item1, i)) return w;
-            return Tuple.Create(r, w.Item2).Super() * Complex.ImaginaryOne;
+        Func<string, string, Func<CircuitState, Superposition<CircuitState>>> reflect = (i, r) => w => {
+            if (w.Wire != i) return w;
+            return w.With(wire: r).Super() * Complex.ImaginaryOne;
         };
-        Func<string, string, string, Func<Tuple<string, bool>, Superposition<Tuple<string, bool>>>> beamSplitter = (i, p, r) => w => {
-            if (!Equals(w.Item1, i)) return w;
-            return Tuple.Create(p, w.Item2).Super() 
-                 + Tuple.Create(r, w.Item2).Super()*Complex.ImaginaryOne;
+        Func<string, string, string, Func<CircuitState, Superposition<CircuitState>>> beamSplitter = (i, p, r) => w => {
+            if (w.Wire != i) return w;
+            return w.With(wire: p).Super() 
+                 + w.With(wire: r).Super()*Complex.ImaginaryOne;
         };
-        Func<string, Func<Tuple<string, bool>, Superposition<Tuple<string, bool>>>> detector = (i) => w => {
-            return Tuple.Create(w.Item1, w.Item2 || w.Item1 == i);
-        };
+        Func<string, Func<CircuitState, Superposition<CircuitState>>> detector = i => w => 
+            w.With(d3: w.Detect3 || w.Wire == i);
 
         var q = new Queue<Tuple<CircuitNode, string>>();
         q.Enqueue(Tuple.Create(Na, Ns.Children.Single().Item2));
-        var reg = Superposition<Tuple<string, bool>>.FromPureValue(Tuple.Create("SA", false));
+        var reg = Superposition<CircuitState>.FromPureValue(new CircuitState { Wire = "SA" });
         while (q.Count > 0) {
             var p = q.Dequeue();
             var n = p.Item1;
