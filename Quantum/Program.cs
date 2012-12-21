@@ -1,123 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
 
 static class Program {
-    static void Main(string[] args) {
+    static void Main() {
         Circuit2();
         Circuit3();
-    }
-    public static F Get<T, F>(this T instance, MockProperty<T, F> property) {
-        return property.GetValue(instance);
-    }
-    public static BeamSplitter<T> Split<T>(this MockProperty<T, Wire> wireProperty, Wire input, Wire throughput, Wire reflectput) {
-        return new BeamSplitter<T>(input, throughput, reflectput, wireProperty);
-    }
-    public static CrossBeamSplitter<T> CrossSplit<T>(this MockProperty<T, Wire> wireProperty, Wire inputH, Wire inputV, Wire outputH, Wire outputV) {
-        return new CrossBeamSplitter<T>(inputH, inputV, outputH, outputV, wireProperty);
-    }
-    public static Reflector<T> Reflect<T>(this MockProperty<T, Wire> wireProperty, Wire input, Wire output) {
-        return new Reflector<T>(input, output, wireProperty);
-    }
-    public static Detector<T> Detect<T>(this MockProperty<T, Wire> wireProperty, MockProperty<T, bool> detectedProperty, Wire input, Wire output = null) {
-        return new Detector<T>(input, output, detectedProperty, wireProperty);
-    }
-    public static T With<T, F>(this T instance, MockProperty<T, F> property, F field) {
-        return property.WithValue(instance, field);
-    }
-    public interface ICircuitElement<T> {
-        Superposition<T> Apply(T state);
-        IReadOnlyList<Wire> Inputs { get; }
-    }
-    public sealed class MockProperty<TInstance, TField> {
-        private readonly Func<TInstance, TField> _getter;
-        private readonly Func<TInstance, TField, TInstance> _setter;
-        public MockProperty(Func<TInstance, TField> getter, Func<TInstance, TField, TInstance> setter) {
-            _getter = getter;
-            _setter = setter;
-        }
-        public TField GetValue(TInstance instance) {
-            return _getter(instance);
-        }
-        public TInstance WithValue(TInstance instance, TField value) {
-            return _setter(instance, value);
-        }
-    }
-    public sealed class Detector<T> : ICircuitElement<T> {
-        public readonly Wire Input;
-        public readonly Wire Output;
-        public readonly MockProperty<T, bool> Detected;
-        public readonly MockProperty<T, Wire> WireProperty;
-        public Detector(Wire input, Wire output, MockProperty<T, bool> detected, MockProperty<T, Wire> wireProperty) {
-            this.Input = input;
-            this.Output = output;
-            this.Detected = detected;
-            this.WireProperty = wireProperty;
-        }
-        public Superposition<T> Apply(T state) {
-            if (state.Get(WireProperty) == Input)
-                return state.With(WireProperty, Output).With(Detected, true);
-            return state;
-        }
-        public IReadOnlyList<Wire> Inputs { get { return Input.SingletonList(); } }
-    }
-    public sealed class BeamSplitter<T> : ICircuitElement<T> {
-        public readonly Wire Input;
-        public readonly Wire OutputPass;
-        public readonly Wire OutputReflect;
-        public readonly MockProperty<T, Wire> WireProperty;
-        public BeamSplitter(Wire input, Wire outputPass, Wire outputReflect, MockProperty<T, Wire> wireProperty) {
-            this.Input = input;
-            this.OutputPass = outputPass;
-            this.OutputReflect = outputReflect;
-            this.WireProperty = wireProperty;
-        }
-        public Superposition<T> Apply(T state) {
-            if (state.Get(WireProperty) == Input)
-                return state.With(WireProperty, OutputPass).Super()
-                     + state.With(WireProperty, OutputReflect).Super() * Complex.ImaginaryOne;
-            return state;
-        }
-        public IReadOnlyList<Wire> Inputs { get { return Input.SingletonList(); } }
-    }
-    public sealed class CrossBeamSplitter<T> : ICircuitElement<T> {
-        public readonly Wire InputV;
-        public readonly Wire InputH;
-        public readonly Wire OutputV;
-        public readonly Wire OutputH;
-        public readonly MockProperty<T, Wire> WireProperty;
-        public CrossBeamSplitter(Wire inputH, Wire inputV, Wire outputH, Wire outputV, MockProperty<T, Wire> wireProperty) {
-            this.InputH = inputH;
-            this.InputV = inputV;
-            this.OutputH = outputH;
-            this.OutputV = outputV;
-            this.WireProperty = wireProperty;
-        }
-        public Superposition<T> Apply(T state) {
-            if (state.Get(WireProperty) == InputV)
-                return new BeamSplitter<T>(InputV, OutputV, OutputH, WireProperty).Apply(state);
-            if (state.Get(WireProperty) == InputH)
-                return new BeamSplitter<T>(InputH, OutputH, OutputV, WireProperty).Apply(state);
-            return state;
-        }
-        public IReadOnlyList<Wire> Inputs { get { return new[] {InputV, InputH}; } }
-    }
-    public sealed class Reflector<T> : ICircuitElement<T> {
-        public readonly Wire Input;
-        public readonly Wire Output;
-        public readonly MockProperty<T, Wire> WireProperty;
-        public Reflector(Wire input, Wire output, MockProperty<T, Wire> wireProperty) {
-            this.Input = input;
-            this.Output = output;
-            this.WireProperty = wireProperty;
-        }
-        public Superposition<T> Apply(T state) {
-            if (state.Get(WireProperty) == Input)
-                return state.With(WireProperty, Output).Super() * Complex.ImaginaryOne;
-            return state;
-        }
-        public IReadOnlyList<Wire> Inputs { get { return Input.SingletonList(); } }
     }
     public struct CircuitState {
         public Wire Wire;
@@ -151,15 +39,6 @@ static class Program {
             if (Detect3) s.Add("3");
             if (Detect4) s.Add("4");
             return String.Join(",", s);
-        }
-    }
-    public sealed class Wire {
-        public readonly string Name;
-        public Wire(string name = null) {
-            this.Name = name;
-        }
-        public override string ToString() {
-            return Name ?? base.ToString();
         }
     }
     public static void Circuit2() {

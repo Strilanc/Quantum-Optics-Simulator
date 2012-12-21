@@ -13,6 +13,12 @@ internal static class Util {
     public static Complex Dot(this IReadOnlyList<Complex> vector1, IReadOnlyList<Complex> vector2) {
         return vector1.Zip(vector2, (e1, e2) => e1*e2).Sum();
     }
+    public static F Get<T, F>(this T instance, MockProperty<T, F> property) {
+        return property.GetValue(instance);
+    }
+    public static T With<T, F>(this T instance, MockProperty<T, F> property, F field) {
+        return property.WithValue(instance, field);
+    }
     public static string ToPrettyString(this Complex c) {
         var r = c.Real;
         var i = c.Imaginary;

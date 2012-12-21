@@ -48,15 +48,21 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ClassicalRegister.cs" />
+    <Compile Include="Circuit\CircuitUtils.cs" />
+    <Compile Include="Circuit\BeamSplitter.cs" />
+    <Compile Include="Circuit\CrossBeamSplitter.cs" />
+    <Compile Include="Circuit\Detector.cs" />
+    <Compile Include="Circuit\ICircuitElement.cs" />
     <Compile Include="Math\ComplexVector.cs" />
+    <Compile Include="Prog\MockProperty.cs" />
     <Compile Include="Phys\Superposition.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Prog\Named.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="QuantumRegister.cs" />
     <Compile Include="Math\ComplexMatrix.cs" />
-    <Compile Include="Util.cs" />
+    <Compile Include="Circuit\Reflector.cs" />
+    <Compile Include="Prog\Util.cs" />
+    <Compile Include="Circuit\Wire.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
