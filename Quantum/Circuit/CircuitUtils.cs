@@ -8,7 +8,7 @@
     public static Reflector<T> Reflect<T>(this MockProperty<T, Wire> wireProperty, Wire input, Wire output) {
         return new Reflector<T>(input, output, wireProperty);
     }
-    public static Detector<T> Detect<T>(this MockProperty<T, Wire> wireProperty, MockProperty<T, bool> detectedProperty, Wire input, Wire output = null) {
+    public static Detector<T> Detect<T>(this MockProperty<T, Wire> wireProperty, Wire input, MockProperty<T, bool> detectedProperty, Wire output = null) {
         return new Detector<T>(input, output, detectedProperty, wireProperty);
     }
 }

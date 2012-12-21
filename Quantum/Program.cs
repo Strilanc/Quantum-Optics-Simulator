@@ -1,85 +1,40 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Strilanc.LinqToCollections;
 
 static class Program {
     static void Main() {
-        Circuit2();
         Circuit3();
     }
     public struct CircuitState {
+        public static MockProperty<CircuitState, Wire> WireProp {
+            get {
+                return new MockProperty<CircuitState, Wire>(
+                    e => e.Wire,
+                    (e, v) => new CircuitState {
+                        Wire = v,
+                        Detections = e.Detections
+                    });
+            }
+        }
+        public static MockProperty<CircuitState, bool> DetectorProp(int i) {
+            return new MockProperty<CircuitState, bool>(
+                e => e.Detections[i],
+                (e, b) => new CircuitState {
+                    Wire = e.Wire,
+                    Detections = new EquatableList<bool>(e.Detections.Impose(b, i).ToArray())
+                });
+        }
+
         public Wire Wire;
-        public bool Detect1;
-        public bool Detect2;
-        public bool Detect3;
-        public bool Detect4;
-        public CircuitState With(bool? d1 = null, bool? d2 = null, bool? d3 = null, bool? d4 = null) {
-            return new CircuitState {
-                Wire = Wire,
-                Detect1 = d1 ?? this.Detect1,
-                Detect2 = d2 ?? this.Detect2,
-                Detect3 = d3 ?? this.Detect3,
-                Detect4 = d4 ?? this.Detect4
-            };
-        }
-        public CircuitState With(Wire wire, bool? d1 = null, bool? d2 = null, bool? d3 = null, bool? d4 = null) {
-            return new CircuitState {
-                Wire = wire,
-                Detect1 = d1 ?? this.Detect1,
-                Detect2 = d2 ?? this.Detect2,
-                Detect3 = d3 ?? this.Detect3,
-                Detect4 = d4 ?? this.Detect4
-            };
-        }
+        public EquatableList<bool> Detections;
         public override string ToString() {
             var s = new List<string>();
+            var d = Detections;
             if (Wire != null) s.Add(Wire.ToString());
-            if (Detect1) s.Add("1");
-            if (Detect2) s.Add("2");
-            if (Detect3) s.Add("3");
-            if (Detect4) s.Add("4");
+            s.AddRange(Detections.Count.Range().Where(e => d[e]).Select(e => e+""));
             return String.Join(",", s);
-        }
-    }
-    public static void Circuit2() {
-        // S--- 0 -----> A ---- 1 -----> C
-        //               |               |
-        //               2               4
-        //               |               |
-        //               v               v
-        //               B ------ 3 ---> D --- 5 --> F
-        //                               |
-        //                               6
-        //                               |
-        //                               v
-        //                               E
-
-        var SA = new Wire("SA");
-        var AC = new Wire("AC");
-        var AB = new Wire("AB");
-        var BD = new Wire("BD");
-        var CD = new Wire("CD");
-        var DE = new Wire("DE");
-        var DF = new Wire("DF");
-
-        var wp = new MockProperty<CircuitState, Wire>(e => e.Wire, (e, w) => e.With(w));
-        var A = wp.Split(input: SA, throughput: AC, reflectput: AB);
-        var B = wp.Reflect(input: AB, output: BD);
-        var C = wp.Reflect(input: AC, output: CD);
-        var D = wp.CrossSplit(inputH: BD, inputV: CD, outputH: DF, outputV: DE);
-        var E = wp.Detect(input: DF, detectedProperty: new MockProperty<CircuitState, bool>(e => e.Detect1, (e, b) => e.With(d1: b)));
-        var F = wp.Detect(input: DE, detectedProperty: new MockProperty<CircuitState, bool>(e => e.Detect2, (e, b) => e.With(d2: b)));
-        var elements = new ICircuitElement<CircuitState>[] {A, B, C, D, E, F};
-        
-        var state = new CircuitState { Wire = SA }.Super();
-        while (true) {
-            var activeWires = new HashSet<Wire>(state.Amplitudes.Keys.Select(e => e.Wire).Where(e => e != null));
-            var activeElements = elements.Where(e => e.Inputs.Any(activeWires.Contains)).ToArray();
-            if (activeElements.Length == 0) break;
-            foreach (var activeElement in elements.Where(e => e.Inputs.Any(activeWires.Contains))) {
-                var newState = state.ApplyTransform(activeElement.Apply);
-                state = newState;
-            }
         }
     }
 
@@ -88,11 +43,11 @@ static class Program {
         //      |       |           
         //      |       |           
         //      |       |           
-        //    C\\------D\-----E\-------\\F
+        //    C\\------D\--1--E\-------\\F
         //              |      |       |
         //              |      |       |
         //              |      |       |
-        //              1    G\\---2--H\------3
+        //              0    G\\---2--H\------3
         //                             |
         //                             |
         //                             |
@@ -103,8 +58,9 @@ static class Program {
         var AC = new Wire("AC");
         var BD = new Wire("BD");
         var CD = new Wire("CD");
-        var DE = new Wire("DE");
+        var D0 = new Wire("D0");
         var D1 = new Wire("D1");
+        var _1E = new Wire("1E");
         var EF = new Wire("EF");
         var EG = new Wire("EG");
         var FH = new Wire("FH");
@@ -113,30 +69,40 @@ static class Program {
         var H3 = new Wire("H3");
         var H4 = new Wire("H4");
 
-        var wp = new MockProperty<CircuitState, Wire>(e => e.Wire, (e, w) => e.With(w));
-        var A = wp.Split(input: _A, throughput: AB, reflectput: AC);
-        var B = wp.Reflect(input: AB, output: BD);
-        var C = wp.Reflect(input: AC, output: CD);
-        var D = wp.CrossSplit(inputH: CD, inputV: BD, outputH: DE, outputV: D1);
-        var E = wp.Split(input: DE, throughput: EF, reflectput: EG);
-        var F = wp.Reflect(input: EF, output: FH);
-        var _1 = wp.Detect(input: D1, detectedProperty: new MockProperty<CircuitState, bool>(e => e.Detect1, (e, b) => e.With(d1: b)));
-        var G = wp.Reflect(input: EG, output: G2);
-        var _2 = wp.Detect(input: G2, output: _2H, detectedProperty: new MockProperty<CircuitState, bool>(e => e.Detect2, (e, b) => e.With(d2: b)));
-        var H = wp.CrossSplit(inputH: _2H, inputV: FH, outputH: H3, outputV: H4);
-        var _3 = wp.Detect(input: H3, detectedProperty: new MockProperty<CircuitState, bool>(e => e.Detect3, (e, b) => e.With(d3: b)));
-        var _4 = wp.Detect(input: H4, detectedProperty: new MockProperty<CircuitState, bool>(e => e.Detect4, (e, b) => e.With(d4: b)));
-        var elements = new ICircuitElement<CircuitState>[] { A, B, C, D, E, F, _1, G, _2, H, _3, _4 };
+        var w = CircuitState.WireProp;
+        Func<int, MockProperty<CircuitState, bool>> d = CircuitState.DetectorProp;
 
-        var state = new CircuitState { Wire = _A }.Super();
+        var elements = new ICircuitElement<CircuitState>[] {
+            w.Reflect(AB, BD),
+            w.Reflect(AC, CD),
+            w.Reflect(EF, FH),
+            w.Reflect(EG, G2),
+
+            w.Split(input: _A, throughput: AB, reflectput: AC),
+            w.Split(input: _1E, throughput: EF, reflectput: EG),
+
+            w.CrossSplit(inputH: CD, inputV: BD, outputH: D1, outputV: D0),
+            w.CrossSplit(inputH: _2H, inputV: FH, outputH: H3, outputV: H4),
+
+            w.Detect(D0, d(0)),
+            w.Detect(D1, d(1), _1E),
+            w.Detect(G2, d(2), _2H),
+            w.Detect(H3, d(3)),
+            w.Detect(H4, d(4))
+        };
+
+        var initialState = new CircuitState {
+            Wire = _A, 
+            Detections = new EquatableList<bool>(ReadOnlyList.Repeat(false, 5))
+        };
+        var state = initialState.Super();
         while (true) {
             var activeWires = new HashSet<Wire>(state.Amplitudes.Keys.Select(e => e.Wire).Where(e => e != null));
             var activeElements = elements.Where(e => e.Inputs.Any(activeWires.Contains)).ToArray();
             if (activeElements.Length == 0) break;
-            foreach (var activeElement in elements.Where(e => e.Inputs.Any(activeWires.Contains))) {
-                var newState = state.ApplyTransform(activeElement.Apply);
-                state = newState;
-            }
+            var newState = activeElements.Aggregate(state, (a, e) => a.Transform(e.Apply));
+            state = newState;
         }
+        var finalState = state;
     }
 }

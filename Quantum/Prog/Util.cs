@@ -16,6 +16,11 @@ internal static class Util {
     public static F Get<T, F>(this T instance, MockProperty<T, F> property) {
         return property.GetValue(instance);
     }
+    public static IReadOnlyList<T> PaddedTo<T>(this IReadOnlyList<T> items, int minCount, T padding = default(T)) {
+        return new AnonymousReadOnlyList<T>(
+            () => Math.Min(items.Count, minCount),
+            i => i < items.Count ? items[i] : padding);
+    }
     public static T With<T, F>(this T instance, MockProperty<T, F> property, F field) {
         return property.WithValue(instance, field);
     }

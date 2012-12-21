@@ -20,6 +20,14 @@ public struct Superposition<T> {
     public static Superposition<T> FromPureValue(T value) {
         return new Superposition<T>(new Dictionary<T, Complex> {{value, 1}});
     }
+    public static Superposition<T> FromFragments(IEnumerable<KeyValuePair<T, Complex>> fragments) {
+        return new Superposition<T>(
+            fragments
+            .GroupBy(e => e.Key, e => e.Value)
+            .Select(e => new KeyValuePair<T, Complex>(e.Key, e.Sum()))
+            .Where(e => e.Value != 0)
+            .ToDictionary(e => e.Key, e => e.Value));
+    } 
 
     public static implicit operator Superposition<T>(T value) {
         return FromPureValue(value);
@@ -29,31 +37,20 @@ public struct Superposition<T> {
         return new Superposition<T>(value.Amplitudes.Select(e => e.Value * factor));
     }
     public static Superposition<T> operator +(Superposition<T> value1, Superposition<T> value2) {
-        return new Superposition<T>(
+        return FromFragments(
             value1
             .Amplitudes
             .Concat(value2.Amplitudes)
-            .GroupBy(e => e.Key, e => e.Value)
-            .ToDictionary(e => e.Key, e => e.Sum() * Math.Sqrt(0.5)));
+            .Select(e => new KeyValuePair<T, Complex>(e.Key, e.Value * Math.Sqrt(0.5))));
     }
 
-    public Superposition<T> ApplyTransform(Func<T, Superposition<T>> transform) {
-        return new Superposition<T>(
+    public Superposition<T> Transform(Func<T, Superposition<T>> transitions) {
+        return FromFragments(
             Amplitudes
             .SelectMany(e => 
-                transform(e.Key)
+                transitions(e.Key)
                 .Amplitudes
-                .Select(f => f.Value * e.Value))
-            .GroupBy(f => f.Key, f => f.Value)
-            .ToDictionary(
-                e => e.Key, 
-                e => e.Sum()));
-    }
-    public Superposition<T> ApplyTransition(Func<T, T> transition) {
-        return ApplyTransform(e => e);
-    }
-    public Superposition<T> ApplySubTransform<R>(Func<T, R> getter, Func<R, R> transform, Func<T, R, T> wither) {
-        return ApplyTransform(e => wither(e, transform(getter(e))));
+                .Select(f => f.Value * e.Value)));
     }
 
     public override string ToString() {

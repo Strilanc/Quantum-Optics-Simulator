@@ -53,6 +53,7 @@
     <Compile Include="Circuit\CrossBeamSplitter.cs" />
     <Compile Include="Circuit\Detector.cs" />
     <Compile Include="Circuit\ICircuitElement.cs" />
+    <Compile Include="Prog\EquatableList.cs" />
     <Compile Include="Math\ComplexVector.cs" />
     <Compile Include="Prog\MockProperty.cs" />
     <Compile Include="Phys\Superposition.cs" />
