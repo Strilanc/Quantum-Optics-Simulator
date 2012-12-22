@@ -9,7 +9,7 @@ using Strilanc.LinqToCollections;
 
 namespace Circuit {
     public partial class MainWindow {
-        private enum CellState {
+        public enum CellState {
             Empty,
             BackSlashSplitter,
             ForeSlashSplitter,
@@ -22,7 +22,7 @@ namespace Circuit {
             public int X;
             public int Y;
             public CellState State;
-            public FrameworkElement Control;
+            public CircuitElementControl Control;
             public bool Dirty;
             public double Trace;
         }
@@ -59,67 +59,12 @@ namespace Circuit {
                 foreach (var j in 20.Range()) {
                     var c = _cells[i, j];
                     if (c.Dirty) {
-                        if (c.Control != null) {
-                            canvas.Children.Remove(c.Control);
-                            c.Control = null;
-                        }
-                        var container = new UserControl();
-                        container.Width = canvas.Width/20;
-                        container.Height = canvas.Height/20;
-                        switch (c.State) {
-                        case CellState.Empty:
-                            container.Content = new Rectangle {
-                                Fill = new SolidColorBrush(Colors.Black),
-                                Height = 2,
-                                Width = 2
-                            };
-                            break;
-                        case CellState.BackSlashSplitter:
-                            container.Content = new Rectangle {
-                                Fill = new SolidColorBrush(Colors.Red),
-                                Height = 2,
-                                RenderTransformOrigin = new Point(0.5, 0.5),
-                                RenderTransform = new RotateTransform(45)
-                            };
-                            break;
-                        case CellState.ForeSlashSplitter:
-                            container.Content = new Rectangle {
-                                Fill = new SolidColorBrush(Colors.Red),
-                                Height = 2,
-                                RenderTransformOrigin = new Point(0.5, 0.5),
-                                RenderTransform = new RotateTransform(-45)
-                            };
-                            break;
-                        case CellState.BackSlashMirror:
-                            container.Content = new Rectangle {
-                                Fill = new SolidColorBrush(Colors.Blue),
-                                Height = 2,
-                                RenderTransformOrigin = new Point(0.5, 0.5),
-                                RenderTransform = new RotateTransform(45)
-                            };
-                            break;
-                        case CellState.ForeSlashMirror:
-                            container.Content = new Rectangle {
-                                Fill = new SolidColorBrush(Colors.Blue),
-                                Height = 2,
-                                RenderTransformOrigin = new Point(0.5, 0.5),
-                                RenderTransform = new RotateTransform(-45)
-                            };
-                            break;
-                        case CellState.DetectorTerminate:
-                            container.Content = new Ellipse {
-                                Fill = new SolidColorBrush(Colors.Red)
-                            };
-                            break;
-                        case CellState.DetectorPropagate:
-                            container.Content = new Ellipse {
-                                Fill = new SolidColorBrush(Colors.Blue)
-                            };
-                            break;
+                        if (c.Control == null) {
+                            c.Control = new CircuitElementControl();
+                            canvas.Children.Add(c.Control);
                         }
                         c.Dirty = false;
-                        c.Control = container;
-                        canvas.Children.Add(container);
+                        c.Control.State = c.State;
                     }
                     if (c.Control != null) {
                         var w = canvas.ActualWidth/20;
@@ -139,6 +84,15 @@ namespace Circuit {
                        select _cells[i, j];
             }
         }
+        private struct CellDiry<T> : ICircuitElement<T> {
+            public ICircuitElement<T> Element;
+            public Cell Cell;
+            public Superposition<T> Apply(T state) {
+                Cell.Trace = 1;
+                return Element.Apply(state);
+            }
+            public IReadOnlyList<Wire> Inputs { get { return Element.Inputs; } }
+        }
         public void ComputeCircuit() {
             var wp = CircuitState.WireProp;
             var wires = 
@@ -155,7 +109,7 @@ namespace Circuit {
             var dcount = 0;
             var elements = 
                 AllCells
-                .SelectMany<Cell, ICircuitElement<CircuitState>>(e => {
+                .Select<Cell, IEnumerable<ICircuitElement<CircuitState>>>(e => {
                     var inLeft = dw[Tuple.Create(">", e.X, e.Y)];
                     var inRight = dw[Tuple.Create("<", e.X, e.Y)];
                     var inUp = dw[Tuple.Create("v", e.X, e.Y)];
@@ -192,17 +146,22 @@ namespace Circuit {
 
                     throw new NotImplementedException();
                 })
+                .Zip(AllCells, (c, ce) => c.Select(e => new CellDiry<CircuitState> { Cell = ce, Element = e}))
+                .SelectMany(e => e)
                 .ToArray();
 
             var initialState = new CircuitState() {
                 Wire = wires[Tuple.Create(">", 0, 10)],
                 Detections = new EquatableList<bool>(ReadOnlyList.Repeat(false, dcount))
             };
+            foreach (var e in AllCells)
+                e.Trace = 0;
             try {
                 var state = initialState.Super();
                 while (true) {
                     var activeWires = new HashSet<Wire>(state.Amplitudes.Keys.Select(e => e.Wire).Where(e => e != null));
                     var activeElements = elements.Where(e => e.Inputs.Any(activeWires.Contains)).ToArray();
+
                     var newState = activeElements.Aggregate(state, (a, e) => a.Transform(e.Apply));
                     if (Equals(state, newState)) break;
                     state = newState;
@@ -210,6 +169,9 @@ namespace Circuit {
                 this.Title = state.ToString();
             } catch (Exception ex) {
                 this.Title = ex.ToString();
+            }
+            foreach (var e in AllCells) {
+                e.Control.Background = new SolidColorBrush(e.Trace == 0 ? Colors.Transparent : Colors.Yellow);
             }
         }
     }

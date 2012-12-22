@@ -1,0 +1,37 @@
+﻿<UserControl x:Class="Circuit.CircuitElementControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             d:DesignHeight="300" d:DesignWidth="300">
+    <Grid>
+        <Image Visibility="Collapsed" x:Name="splitterFore" Source="Assets\Splitter_TL_BR.png" RenderTransformOrigin="0.5,0.5">
+            <Image.RenderTransform>
+                <TransformGroup>
+                    <ScaleTransform ScaleY="-1"/>
+                    <SkewTransform/>
+                    <RotateTransform/>
+                    <TranslateTransform/>
+                </TransformGroup>
+            </Image.RenderTransform>
+        </Image>
+        <Image Visibility="Collapsed" x:Name="splitterBack" Source="Assets\Splitter_TL_BR.png"/>
+
+        <Image Visibility="Collapsed" x:Name="mirrorFore" Source="Assets\Mirror_TL_BR.png" RenderTransformOrigin="0.5,0.5">
+            <Image.RenderTransform>
+                <TransformGroup>
+                    <ScaleTransform ScaleY="-1"/>
+                    <SkewTransform/>
+                    <RotateTransform/>
+                    <TranslateTransform/>
+                </TransformGroup>
+            </Image.RenderTransform>
+        </Image>
+        <Image Visibility="Collapsed" x:Name="mirrorBack" Source="Assets\Mirror_TL_BR.png"/>
+
+        <Rectangle Visibility="Collapsed" x:Name="empty" Fill="Black" Width="1" Height="1"/>
+        <Image Visibility="Collapsed" x:Name="detectorCatch" Source="Assets\PhotonCatcher.png"/>
+        <Image Visibility="Collapsed" x:Name="detectorPass" Source="Assets\PhotonNoter.png"/>
+    </Grid>
+</UserControl>
