@@ -7,36 +7,6 @@ static class Program {
     static void Main() {
         Circuit3();
     }
-    public struct CircuitState {
-        public static MockProperty<CircuitState, Wire> WireProp {
-            get {
-                return new MockProperty<CircuitState, Wire>(
-                    e => e.Wire,
-                    (e, v) => new CircuitState {
-                        Wire = v,
-                        Detections = e.Detections
-                    });
-            }
-        }
-        public static MockProperty<CircuitState, bool> DetectorProp(int i) {
-            return new MockProperty<CircuitState, bool>(
-                e => e.Detections[i],
-                (e, b) => new CircuitState {
-                    Wire = e.Wire,
-                    Detections = new EquatableList<bool>(e.Detections.Impose(b, i).ToArray())
-                });
-        }
-
-        public Wire Wire;
-        public EquatableList<bool> Detections;
-        public override string ToString() {
-            var s = new List<string>();
-            var d = Detections;
-            if (Wire != null) s.Add(Wire.ToString());
-            s.AddRange(Detections.Count.Range().Where(e => d[e]).Select(e => e+""));
-            return String.Join(",", s);
-        }
-    }
 
     public static void Circuit3() {
         // *>--A\-------\\B   

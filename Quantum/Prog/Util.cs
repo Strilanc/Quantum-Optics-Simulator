@@ -5,7 +5,7 @@ using System.Numerics;
 using System.Reflection;
 using Strilanc.LinqToCollections;
 
-internal static class Util {
+public static class Util {
     private const double Tau = Math.PI*2;
     public static Complex Sum(this IEnumerable<Complex> sequence) {
         return sequence.Aggregate(Complex.Zero, (a, e) => a + e);
@@ -23,6 +23,15 @@ internal static class Util {
     }
     public static T With<T, F>(this T instance, MockProperty<T, F> property, F field) {
         return property.WithValue(instance, field);
+    }
+    public static IReadOnlyDictionary<K, V> WithDefaultResult<K, V>(this IReadOnlyDictionary<K, V> dic, V def = default(V)) {
+        return new AnonymousReadOnlyDictionary<K, V>(
+            () => dic.Count,
+            dic.Keys,
+            (K k, out V v) => {
+                if (!dic.TryGetValue(k, out v)) v = def;
+                return true;
+            });
     }
     public static string ToPrettyString(this Complex c) {
         var r = c.Real;

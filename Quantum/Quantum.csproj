@@ -32,9 +32,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Angle">
-      <HintPath>..\packages\Strilanc.Angle.1.0.3\lib\portable-net4+sl4+wp7+win8\Angle.dll</HintPath>
-    </Reference>
     <Reference Include="LinqToCollections">
       <HintPath>..\packages\Strilanc.LinqToCollections.1.0.0\lib\portable-net45+win8\LinqToCollections.dll</HintPath>
     </Reference>
@@ -48,8 +45,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Circuit\CircuitState.cs" />
     <Compile Include="Circuit\CircuitUtils.cs" />
     <Compile Include="Circuit\BeamSplitter.cs" />
+    <Compile Include="Circuit\Propagater.cs" />
     <Compile Include="Circuit\CrossBeamSplitter.cs" />
     <Compile Include="Circuit\Detector.cs" />
     <Compile Include="Circuit\ICircuitElement.cs" />

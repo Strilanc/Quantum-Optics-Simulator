@@ -1,4 +1,4 @@
-﻿static class CircuitUtils {
+﻿public static class CircuitUtils {
     public static BeamSplitter<T> Split<T>(this MockProperty<T, Wire> wireProperty, Wire input, Wire throughput, Wire reflectput) {
         return new BeamSplitter<T>(input, throughput, reflectput, wireProperty);
     }
@@ -10,5 +10,8 @@
     }
     public static Detector<T> Detect<T>(this MockProperty<T, Wire> wireProperty, Wire input, MockProperty<T, bool> detectedProperty, Wire output = null) {
         return new Detector<T>(input, output, detectedProperty, wireProperty);
+    }
+    public static Propagater<T> Propagate<T>(this MockProperty<T, Wire> wireProperty, Wire input, Wire output) {
+        return new Propagater<T>(input, output, wireProperty);
     }
 }
