@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
 using Strilanc.LinqToCollections;
+using TwistedOak.Collections;
 
 /// <summary>
 /// A quantum superposition of values.

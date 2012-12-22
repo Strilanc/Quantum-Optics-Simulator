@@ -140,55 +140,22 @@ namespace Circuit {
             }
         }
         public void ComputeCircuit() {
-            if (_cells[0, 10].State != CellState.Empty) {
-                this.Title = "?";
-                return;
-            }
             var wp = CircuitState.WireProp;
-            var wires = AllCells
-                .SelectMany(e => new[] {
-                    Tuple.Create("^", e.X, e.Y),
-                    Tuple.Create("<", e.X, e.Y),
-                    Tuple.Create(">", e.X, e.Y),
-                    Tuple.Create("v", e.X, e.Y)
-                })
+            var wires = 
+                Enumerable.Range(-1, 22)
+                .SelectMany(x => 
+                    Enumerable.Range(-1, 22)
+                    .SelectMany(y => new[] {
+                        Tuple.Create("^", x, y),
+                        Tuple.Create("<", x, y),
+                        Tuple.Create(">", x, y),
+                        Tuple.Create("v", x, y)}))
                 .ToDictionary(e => e, e => new Wire(e.ToString()));
             var dw = wires.WithDefaultResult();
-            var propagateElements =
-                AllCells
-                .SelectMany(e => {
-                    var r = new List<ICircuitElement<CircuitState>>();
-                    if (e.X <= 0 || e.X >= 19) return r;
-                    if (e.Y <= 0 || e.Y >= 19) return r;
-                    var inLeft = dw[Tuple.Create(">", e.X - 1, e.Y)];
-                    var inRight = dw[Tuple.Create("<", e.X + 1, e.Y)];
-                    var inUp = dw[Tuple.Create("v", e.X, e.Y - 1)];
-                    var inDown = dw[Tuple.Create("^", e.X, e.Y + 1)];
-
-                    var outLeft = dw[Tuple.Create("<", e.X, e.Y)];
-                    var outRight = dw[Tuple.Create(">", e.X, e.Y)];
-                    var outUp = dw[Tuple.Create("^", e.X, e.Y)];
-                    var outDown = dw[Tuple.Create("v", e.X, e.Y)];
-
-                    var ins = new[] { inRight, inUp, inLeft, inDown };
-                    var outs = new[] { outRight, outUp, outLeft, outDown };
-
-                    foreach (var i in 4.Range()) {
-                        var inp = ins[i];
-                        var oup = outs[(i + 2) % 4];
-                        r.Add(wp.Propagate(inp, oup));
-                    }
-                    return r;
-                })
-                .ToArray();
-
             var dcount = 0;
-            var interestingElements = 
+            var elements = 
                 AllCells
-                .SelectMany(e => {
-                    var r = new List<ICircuitElement<CircuitState>>();
-                    if (e.X <= 0 || e.X >= 19) return r;
-                    if (e.Y <= 0 || e.Y >= 19) return r;
+                .SelectMany<Cell, ICircuitElement<CircuitState>>(e => {
                     var inLeft = dw[Tuple.Create(">", e.X, e.Y)];
                     var inRight = dw[Tuple.Create("<", e.X, e.Y)];
                     var inUp = dw[Tuple.Create("v", e.X, e.Y)];
@@ -204,40 +171,28 @@ namespace Circuit {
 
                     var r1 = new[] { 1, 0, 3, 2 };
                     var r2 = new[] { 3, 2, 1, 0 };
-                    if (e.State == CellState.BackSlashSplitter) {
-                        foreach (var i in 4.Range()) {
-                            r.Add(wp.Split(ins[i], outs[(i + 2)%4], outs[r1[i]]));
-                        }
-                    } else if (e.State == CellState.ForeSlashSplitter) {
-                        foreach (var i in 4.Range()) {
-                            r.Add(wp.Split(ins[i], outs[(i + 2) % 4], outs[r2[i]]));
-                        }
-                    } else if (e.State == CellState.BackSlashMirror) {
-                        foreach (var i in 4.Range()) {
-                            r.Add(wp.Reflect(ins[i], outs[r1[i]]));
-                        }
-                    } else if (e.State == CellState.ForeSlashMirror) {
-                        foreach (var i in 4.Range()) {
-                            r.Add(wp.Reflect(ins[i], outs[r2[i]]));
-                        }
-                    } else if (e.State == CellState.DetectorTerminate) {
+                    if (e.State == CellState.Empty)
+                        return 4.Range().Select(i => wp.Propagate(ins[i], outs[(i + 2) % 4]));
+                    if (e.State == CellState.BackSlashSplitter)
+                        return 4.Range().Select(i => wp.Split(ins[i], outs[(i + 2) % 4], outs[r1[i]]));
+                    if (e.State == CellState.ForeSlashSplitter)
+                        return 4.Range().Select(i => wp.Split(ins[i], outs[(i + 2) % 4], outs[r2[i]]));
+                    if (e.State == CellState.BackSlashMirror)
+                        return 4.Range().Select(i => wp.Reflect(ins[i], outs[r1[i]]));
+                    if (e.State == CellState.ForeSlashMirror)
+                        return 4.Range().Select(i => wp.Reflect(ins[i], outs[r2[i]]));
+                    if (e.State == CellState.DetectorTerminate) {
                         var d = CircuitState.DetectorProp(dcount++);
-                        foreach (var i in 4.Range()) {
-                            var inp = ins[i];
-                            r.Add(wp.Detect(inp, d));
-                        }
-                    } else if (e.State == CellState.DetectorPropagate) {
-                        var d = CircuitState.DetectorProp(dcount++);
-                        foreach (var i in 4.Range()) {
-                            var inp = ins[i];
-                            var oup = outs[(i + 2) % 4];
-                            r.Add(wp.Detect(inp, d, oup));
-                        }
+                        return 4.Range().Select(i => wp.Detect(ins[i], d));
                     }
-                    return r;
+                    if (e.State == CellState.DetectorPropagate) {
+                        var d = CircuitState.DetectorProp(dcount++);
+                        return 4.Range().Select(i => wp.Detect(ins[i], d, outs[(i + 2) % 4]));
+                    }
+
+                    throw new NotImplementedException();
                 })
                 .ToArray();
-            var elements = interestingElements.Concat(propagateElements);
 
             var initialState = new CircuitState() {
                 Wire = wires[Tuple.Create(">", 0, 10)],

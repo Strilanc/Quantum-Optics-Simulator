@@ -32,13 +32,28 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Lifetime">
+      <HintPath>..\packages\TwistedOak.Util.Lifetime.1.0.1\lib\portable-net4+win8\Lifetime.dll</HintPath>
+    </Reference>
     <Reference Include="LinqToCollections, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\Strilanc.LinqToCollections.1.0.1\lib\portable-net45+win8\LinqToCollections.dll</HintPath>
     </Reference>
+    <Reference Include="PerishableCollection">
+      <HintPath>..\packages\TwistedOak.Collections.PerishableCollection.1.0.0\lib\portable-net45+win8\PerishableCollection.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Numerics" />
+    <Reference Include="System.Reactive.Core">
+      <HintPath>..\packages\Rx-Core.2.0.21114\lib\Net45\System.Reactive.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Reactive.Interfaces">
+      <HintPath>..\packages\Rx-Interfaces.2.0.21114\lib\Net45\System.Reactive.Interfaces.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Reactive.Linq">
+      <HintPath>..\packages\Rx-Linq.2.0.21114\lib\Net45\System.Reactive.Linq.dll</HintPath>
+    </Reference>
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
