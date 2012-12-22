@@ -15,7 +15,7 @@ using Strilanc.LinqToCollections;
 public struct Superposition<T> {
     private readonly IReadOnlyDictionary<T, Complex> _state;
     public IReadOnlyDictionary<T, Complex> Amplitudes { get { return _state ?? new Dictionary<T, Complex> {{default(T), 1}}; } }
-    public IReadOnlyDictionary<T, double> Probabilities { get { return Amplitudes.Select(e => e.Value.SquaredMagnitude()); } }
+    public IReadOnlyDictionary<T, double> Probabilities { get { return Amplitudes.SelectValue(e => e.Value.SquaredMagnitude()); } }
 
     public Superposition(IReadOnlyDictionary<T, Complex> state) {
         if (state == null) throw new ArgumentNullException("state");
@@ -40,7 +40,7 @@ public struct Superposition<T> {
     }
 
     public static Superposition<T> operator *(Superposition<T> value, Complex factor) {
-        return new Superposition<T>(value.Amplitudes.Select(e => e.Value * factor));
+        return new Superposition<T>(value.Amplitudes.SelectValue(e => e.Value * factor));
     }
     public static Superposition<T> operator +(Superposition<T> value1, Superposition<T> value2) {
         return FromFragments(
@@ -60,7 +60,7 @@ public struct Superposition<T> {
             .SelectMany(e => 
                 transitions(e.Key)
                 .Amplitudes
-                .Select(f => f.Value * e.Value)));
+                .SelectValue(f => f.Value * e.Value)));
     }
 
     public override string ToString() {
@@ -74,7 +74,6 @@ public struct Superposition<T> {
                     if (s.Contains('+') || s.Contains('-')) s = "(" + s + ")";
                     return String.Format("{1} |{0}>", pair.Key, s);
                 })
-                .Values
                 .Where(e => e != null));
     }
 }

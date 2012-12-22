@@ -28,6 +28,7 @@ namespace Circuit {
         }
 
         private Cell[,] _cells;
+        
         public MainWindow() {
             InitializeComponent();
             
@@ -116,6 +117,7 @@ namespace Circuit {
                             };
                             break;
                         }
+                        c.Dirty = false;
                         c.Control = container;
                         canvas.Children.Add(container);
                     }
@@ -187,15 +189,15 @@ namespace Circuit {
                     var r = new List<ICircuitElement<CircuitState>>();
                     if (e.X <= 0 || e.X >= 19) return r;
                     if (e.Y <= 0 || e.Y >= 19) return r;
-                    var inLeft = dw[Tuple.Create(">", e.X - 1, e.Y)];
-                    var inRight = dw[Tuple.Create("<", e.X + 1, e.Y)];
-                    var inUp = dw[Tuple.Create("v", e.X, e.Y - 1)];
-                    var inDown = dw[Tuple.Create("^", e.X, e.Y + 1)];
+                    var inLeft = dw[Tuple.Create(">", e.X, e.Y)];
+                    var inRight = dw[Tuple.Create("<", e.X, e.Y)];
+                    var inUp = dw[Tuple.Create("v", e.X, e.Y)];
+                    var inDown = dw[Tuple.Create("^", e.X, e.Y)];
 
-                    var outLeft = dw[Tuple.Create("<", e.X, e.Y)];
-                    var outRight = dw[Tuple.Create(">", e.X, e.Y)];
-                    var outUp = dw[Tuple.Create("^", e.X, e.Y)];
-                    var outDown = dw[Tuple.Create("v", e.X, e.Y)];
+                    var outLeft = dw[Tuple.Create("<", e.X - 1, e.Y)];
+                    var outRight = dw[Tuple.Create(">", e.X + 1, e.Y)];
+                    var outUp = dw[Tuple.Create("^", e.X, e.Y - 1)];
+                    var outDown = dw[Tuple.Create("v", e.X, e.Y + 1)];
 
                     var ins = new[] { inRight, inUp, inLeft, inDown };
                     var outs = new[] { outRight, outUp, outLeft, outDown };
@@ -241,15 +243,19 @@ namespace Circuit {
                 Wire = wires[Tuple.Create(">", 0, 10)],
                 Detections = new EquatableList<bool>(ReadOnlyList.Repeat(false, dcount))
             };
-            var state = initialState.Super();
-            while (true) {
-                var activeWires = new HashSet<Wire>(state.Amplitudes.Keys.Select(e => e.Wire).Where(e => e != null));
-                var activeElements = elements.Where(e => e.Inputs.Any(activeWires.Contains)).ToArray();
-                var newState = activeElements.Aggregate(state, (a, e) => a.Transform(e.Apply));
-                if (Equals(state, newState)) break;
-                state = newState;
+            try {
+                var state = initialState.Super();
+                while (true) {
+                    var activeWires = new HashSet<Wire>(state.Amplitudes.Keys.Select(e => e.Wire).Where(e => e != null));
+                    var activeElements = elements.Where(e => e.Inputs.Any(activeWires.Contains)).ToArray();
+                    var newState = activeElements.Aggregate(state, (a, e) => a.Transform(e.Apply));
+                    if (Equals(state, newState)) break;
+                    state = newState;
+                }
+                this.Title = state.ToString();
+            } catch (Exception ex) {
+                this.Title = ex.ToString();
             }
-            this.Title = state.ToString();
         }
     }
     public static class Util {

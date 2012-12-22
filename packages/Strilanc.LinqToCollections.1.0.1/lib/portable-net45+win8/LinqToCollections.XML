@@ -7,6 +7,12 @@
         <member name="T:Strilanc.LinqToCollections.AbstractReadOnlyCollection`1">
             <summary>A partially implemented readonly collection.</summary>
         </member>
+        <member name="M:Strilanc.LinqToCollections.AbstractReadOnlyCollection`1.GetEnumerator">
+            <summary>Enumerates the items in the collection.</summary>
+        </member>
+        <member name="P:Strilanc.LinqToCollections.AbstractReadOnlyCollection`1.Count">
+            <summary>The number of items in the collection.</summary>
+        </member>
         <member name="T:Strilanc.LinqToCollections.AnonymousReadOnlyCollection`1">
             <summary>A readonly collection implemented with delegates passed to its constructor.</summary>
         </member>
@@ -69,6 +75,9 @@
         <member name="P:Strilanc.LinqToCollections.AbstractReadOnlyDictionary`2.Item(`0)">
             <summary>Returns the value associated with the given key, throwing an exception if no such key is in the dictionary.</summary>
         </member>
+        <member name="T:Strilanc.LinqToCollections.TryGetter`2">
+            <summary>Determines if a key is in a dictionary and returns the associated value.</summary>
+        </member>
         <member name="T:Strilanc.LinqToCollections.AnonymousReadOnlyDictionary`2">
             <summary>A readonly dictionary implemented with delegates passed to its constructor.</summary>
         </member>
@@ -80,15 +89,6 @@
         </member>
         <member name="M:Strilanc.LinqToCollections.AnonymousReadOnlyDictionary`2.#ctor(System.Func{System.Int32},System.Collections.Generic.IEnumerable{`0},Strilanc.LinqToCollections.TryGetter{`0,`1})">
             <summary>Creates an anonymous dictionary based on a counter, keys, and a getter.</summary>
-        </member>
-        <member name="M:Strilanc.LinqToCollections.AnonymousReadOnlyDictionary`2.TryGetValue(`0,`1@)">
-            <summary>Tries to get the value associated with a key, returning true when successful.</summary>
-        </member>
-        <member name="P:Strilanc.LinqToCollections.AnonymousReadOnlyDictionary`2.Count">
-            <summary>The number of key/value pairs in the dictionary.</summary>
-        </member>
-        <member name="P:Strilanc.LinqToCollections.AnonymousReadOnlyDictionary`2.Keys">
-            <summary>The keys in the dictionary.</summary>
         </member>
         <member name="T:Strilanc.LinqToCollections.DictionaryAdapter`2">
             <summary>Exposes a readonly dictionary as a mutable dictionary that doesn't support mutation.</summary>
@@ -106,7 +106,7 @@
         <member name="M:Strilanc.LinqToCollections.ReadOnlyDictionary.AsIDictionary``2(System.Collections.Generic.IReadOnlyDictionary{``0,``1})">
             <summary>Exposes a read-only dictionary as a dictionary, using a cast if possible.</summary>
         </member>
-        <member name="M:Strilanc.LinqToCollections.ReadOnlyDictionary.Select``3(System.Collections.Generic.IReadOnlyDictionary{``0,``1},System.Func{System.Collections.Generic.KeyValuePair{``0,``1},``2})">
+        <member name="M:Strilanc.LinqToCollections.ReadOnlyDictionary.SelectValue``3(System.Collections.Generic.IReadOnlyDictionary{``0,``1},System.Func{System.Collections.Generic.KeyValuePair{``0,``1},``2})">
             <summary>Returns a readable dictionary with the same keys, but values determined by projecting the existing key/value pairs.</summary>
         </member>
         <member name="M:Strilanc.LinqToCollections.ReadOnlyDictionary.Empty``2">
@@ -114,6 +114,15 @@
         </member>
         <member name="T:Strilanc.LinqToCollections.AbstractReadOnlyList`1">
             <summary>A partially implemented readonly list.</summary>
+        </member>
+        <member name="M:Strilanc.LinqToCollections.AbstractReadOnlyList`1.GetEnumerator">
+            <summary>Enumerates the items in the list.</summary>
+        </member>
+        <member name="P:Strilanc.LinqToCollections.AbstractReadOnlyList`1.Count">
+            <summary>The number of items in the list.</summary>
+        </member>
+        <member name="P:Strilanc.LinqToCollections.AbstractReadOnlyList`1.Item(System.Int32)">
+            <summary>Returns the item at the given index in the list.</summary>
         </member>
         <member name="T:Strilanc.LinqToCollections.AnonymousReadOnlyList`1">
             <summary>A readonly list implemented with delegates passed to its constructor.</summary>
