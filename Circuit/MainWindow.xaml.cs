@@ -11,8 +11,6 @@ namespace Circuit {
     public partial class MainWindow {
         private enum CellState {
             Empty,
-            HWire,
-            VWire,
             BackSlashSplitter,
             ForeSlashSplitter,
             BackSlashMirror,
@@ -26,6 +24,7 @@ namespace Circuit {
             public CellState State;
             public FrameworkElement Control;
             public bool Dirty;
+            public double Trace;
         }
 
         private Cell[,] _cells;
@@ -38,17 +37,16 @@ namespace Circuit {
                     _cells[i, j] = new Cell {X = i, Y = j, State = CellState.Empty, Control = null, Dirty=true};
                 }
             }
-            _cells[0, 10].State = CellState.HWire;
 
             this.MouseDown += (sender, arg) => {
                 var p = arg.GetPosition(canvas);
                 var i = (p.X / canvas.ActualWidth * 20).FloorInt();
                 var j = (p.Y / canvas.ActualHeight * 20).FloorInt();
                 var c = _cells[i, j];
-                c.State = (CellState)(((int)c.State + 1) % 9);
+                c.State = (CellState)(((int)c.State + 1) % 7);
                 c.Dirty = true;
-                ShowCells();
                 ComputeCircuit();
+                ShowCells();
             };
             this.Loaded += (sender2, arg2) => {
                 ShowCells();
@@ -65,25 +63,14 @@ namespace Circuit {
                             c.Control = null;
                         }
                         var container = new UserControl();
-                        container.BorderBrush = new SolidColorBrush(Colors.Yellow);
-                        container.BorderThickness = new Thickness(1);
                         container.Width = canvas.Width/20;
                         container.Height = canvas.Height/20;
                         switch (c.State) {
                         case CellState.Empty:
-                            break;
-                        case CellState.HWire:
-                            container.Content = new Rectangle {
-                                Fill = new SolidColorBrush(Colors.Black),
-                                Height = 2
-                            };
-                            break;
-                        case CellState.VWire:
                             container.Content = new Rectangle {
                                 Fill = new SolidColorBrush(Colors.Black),
                                 Height = 2,
-                                RenderTransformOrigin = new Point(0.5, 0.5),
-                                RenderTransform = new RotateTransform(90)
+                                Width = 2
                             };
                             break;
                         case CellState.BackSlashSplitter:
@@ -151,53 +138,107 @@ namespace Circuit {
             }
         }
         public void ComputeCircuit() {
-            var i = 0;
-            var j = 10;
-            if (_cells[i, j].State != CellState.HWire) {
+            if (_cells[0, 10].State != CellState.Empty) {
                 this.Title = "?";
                 return;
             }
             var wp = CircuitState.WireProp;
             var wires = AllCells
-                .Where(cell => cell.State == CellState.HWire || cell.State == CellState.VWire)
-                .ToDictionary(e => e, e => new Wire(string.Format("{0},{1}", e.X, e.Y)));
+                .SelectMany(e => new[] {
+                    Tuple.Create("^", e.X, e.Y),
+                    Tuple.Create("<", e.X, e.Y),
+                    Tuple.Create(">", e.X, e.Y),
+                    Tuple.Create("v", e.X, e.Y)
+                })
+                .ToDictionary(e => e, e => new Wire(e.ToString()));
             var dw = wires.WithDefaultResult();
-            var dcount = 0;
-            var elements = AllCells
+            var propagateElements =
+                AllCells
                 .SelectMany(e => {
                     var r = new List<ICircuitElement<CircuitState>>();
                     if (e.X <= 0 || e.X >= 19) return r;
                     if (e.Y <= 0 || e.Y >= 19) return r;
-                    var left = dw[_cells[e.X - 1, e.Y]];
-                    var up = dw[_cells[e.X, e.Y - 1]];
-                    var down = dw[_cells[e.X, e.Y+1]];
-                    var right = dw[_cells[e.X + 1, e.Y]];
+                    var inLeft = dw[Tuple.Create(">", e.X - 1, e.Y)];
+                    var inRight = dw[Tuple.Create("<", e.X + 1, e.Y)];
+                    var inUp = dw[Tuple.Create("v", e.X, e.Y - 1)];
+                    var inDown = dw[Tuple.Create("^", e.X, e.Y + 1)];
 
-                    if (e.State == CellState.BackSlashSplitter) {
-                        if (left != null && right != null && down != null)
-                            r.Add(wp.Split(left, right, down));
-                        if (up != null && right != null && down != null)
-                            r.Add(wp.Split(up, down, right));
-                    } else if (e.State == CellState.BackSlashMirror) {
-                        if (left != null && down != null)
-                            r.Add(wp.Reflect(left, down));
-                        if (up != null && right != null)
-                            r.Add(wp.Reflect(up, right));
-                    } else if (e.State == CellState.DetectorTerminate) {
-                        r.Add(wp.Detect(left ?? up, CircuitState.DetectorProp(dcount++)));
-                    } else if (e.State == CellState.DetectorPropagate) {
-                        r.Add(wp.Detect(left ?? up, CircuitState.DetectorProp(dcount++), right ?? down));
-                    } else if (e.State == CellState.HWire && _cells[e.X - 1, e.Y].State == CellState.HWire) {
-                        r.Add(wp.Propagate(left, dw[e]));
-                    } else if (e.State == CellState.VWire && _cells[e.X, e.Y - 1].State == CellState.VWire) {
-                        r.Add(wp.Propagate(up, dw[e]));
+                    var outLeft = dw[Tuple.Create("<", e.X, e.Y)];
+                    var outRight = dw[Tuple.Create(">", e.X, e.Y)];
+                    var outUp = dw[Tuple.Create("^", e.X, e.Y)];
+                    var outDown = dw[Tuple.Create("v", e.X, e.Y)];
+
+                    var ins = new[] { inRight, inUp, inLeft, inDown };
+                    var outs = new[] { outRight, outUp, outLeft, outDown };
+
+                    foreach (var i in 4.Range()) {
+                        var inp = ins[i];
+                        var oup = outs[(i + 2) % 4];
+                        r.Add(wp.Propagate(inp, oup));
                     }
                     return r;
                 })
                 .ToArray();
 
+            var dcount = 0;
+            var interestingElements = 
+                AllCells
+                .SelectMany(e => {
+                    var r = new List<ICircuitElement<CircuitState>>();
+                    if (e.X <= 0 || e.X >= 19) return r;
+                    if (e.Y <= 0 || e.Y >= 19) return r;
+                    var inLeft = dw[Tuple.Create(">", e.X - 1, e.Y)];
+                    var inRight = dw[Tuple.Create("<", e.X + 1, e.Y)];
+                    var inUp = dw[Tuple.Create("v", e.X, e.Y - 1)];
+                    var inDown = dw[Tuple.Create("^", e.X, e.Y + 1)];
+
+                    var outLeft = dw[Tuple.Create("<", e.X, e.Y)];
+                    var outRight = dw[Tuple.Create(">", e.X, e.Y)];
+                    var outUp = dw[Tuple.Create("^", e.X, e.Y)];
+                    var outDown = dw[Tuple.Create("v", e.X, e.Y)];
+
+                    var ins = new[] { inRight, inUp, inLeft, inDown };
+                    var outs = new[] { outRight, outUp, outLeft, outDown };
+
+                    var r1 = new[] { 1, 0, 3, 2 };
+                    var r2 = new[] { 3, 2, 1, 0 };
+                    if (e.State == CellState.BackSlashSplitter) {
+                        foreach (var i in 4.Range()) {
+                            r.Add(wp.Split(ins[i], outs[(i + 2)%4], outs[r1[i]]));
+                        }
+                    } else if (e.State == CellState.ForeSlashSplitter) {
+                        foreach (var i in 4.Range()) {
+                            r.Add(wp.Split(ins[i], outs[(i + 2) % 4], outs[r2[i]]));
+                        }
+                    } else if (e.State == CellState.BackSlashMirror) {
+                        foreach (var i in 4.Range()) {
+                            r.Add(wp.Reflect(ins[i], outs[r1[i]]));
+                        }
+                    } else if (e.State == CellState.ForeSlashMirror) {
+                        foreach (var i in 4.Range()) {
+                            r.Add(wp.Reflect(ins[i], outs[r2[i]]));
+                        }
+                    } else if (e.State == CellState.DetectorTerminate) {
+                        var d = CircuitState.DetectorProp(dcount++);
+                        foreach (var i in 4.Range()) {
+                            var inp = ins[i];
+                            r.Add(wp.Detect(inp, d));
+                        }
+                    } else if (e.State == CellState.DetectorPropagate) {
+                        var d = CircuitState.DetectorProp(dcount++);
+                        foreach (var i in 4.Range()) {
+                            var inp = ins[i];
+                            var oup = outs[(i + 2) % 4];
+                            r.Add(wp.Detect(inp, d, oup));
+                        }
+                    }
+                    return r;
+                })
+                .ToArray();
+            var elements = interestingElements.Concat(propagateElements);
+
             var initialState = new CircuitState() {
-                Wire = wires[_cells[0, 10]],
+                Wire = wires[Tuple.Create(">", 0, 10)],
                 Detections = new EquatableList<bool>(ReadOnlyList.Repeat(false, dcount))
             };
             var state = initialState.Super();
