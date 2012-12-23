@@ -20,7 +20,8 @@ public struct Superposition<T> {
 
     public Superposition(IReadOnlyDictionary<T, Complex> state) {
         if (state == null) throw new ArgumentNullException("state");
-        if (Math.Abs(state.Values.Select(e => e.SquaredMagnitude()).Sum() - 1) > 0.0001)
+        var s = state.Values.Select(e => e.SquaredMagnitude()).Sum();
+        if (Math.Abs(s - 1) > 0.0001)
             throw new ArgumentException("Not unitary");
         this._state = state;
     }
