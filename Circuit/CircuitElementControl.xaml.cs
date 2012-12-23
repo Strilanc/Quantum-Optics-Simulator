@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System.Numerics;
+using System.Windows;
 
 namespace Circuit {
     public partial class CircuitElementControl {

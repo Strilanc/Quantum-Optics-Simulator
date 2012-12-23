@@ -64,6 +64,10 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="Wave.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -74,6 +78,9 @@
     </Compile>
     <Compile Include="CircuitElementControl.xaml.cs">
       <DependentUpon>CircuitElementControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Wave.xaml.cs">
+      <DependentUpon>Wave.xaml</DependentUpon>
     </Compile>
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
@@ -125,6 +132,9 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Assets\PhotonNoter.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Assets\Wave.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

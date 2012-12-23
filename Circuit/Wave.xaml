@@ -1,0 +1,13 @@
+﻿<UserControl x:Class="Circuit.Wave"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             d:DesignHeight="147"
+             d:DesignWidth="259">
+    <Grid>
+        <Image x:Name="WaveImage1" Source="Assets/Wave.png" Stretch="Fill"/>
+        <Image x:Name="WaveImage2" Source="Assets/Wave.png" Stretch="Fill"/>
+    </Grid>
+</UserControl>

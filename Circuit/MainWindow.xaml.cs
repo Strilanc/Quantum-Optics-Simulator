@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -27,6 +28,7 @@ namespace Circuit {
             public double Trace;
         }
 
+        private Dictionary<string, Wave> _waveControls = new Dictionary<string, Wave>();
         private Cell[,] _cells;
         
         public MainWindow() {
@@ -36,9 +38,27 @@ namespace Circuit {
             foreach (var i in 20.Range()) {
                 foreach (var j in 20.Range()) {
                     _cells[i, j] = new Cell {X = i, Y = j, State = CellState.Empty, Control = null, Dirty=true};
+                    Wave w;
+
+                    w = new Wave() { RenderTransformOrigin=new Point(0.5, 0.5), RenderTransform=new RotateTransform(180)};
+                    _waveControls[Tuple.Create("<", i, j).ToString()] = w;
+                    canvas.Children.Add(w);
+                    
+                    w = new Wave() { RenderTransformOrigin=new Point(0.5, 0.5)};
+                    _waveControls[Tuple.Create(">", i, j).ToString()] = w;
+                    canvas.Children.Add(w);
+                    
+                    w = new Wave() { RenderTransformOrigin=new Point(0.5, 0.5), RenderTransform=new RotateTransform(270)};
+                    _waveControls[Tuple.Create("^", i, j).ToString()] = w;
+                    canvas.Children.Add(w);
+                    
+                    w = new Wave() { RenderTransformOrigin=new Point(0.5, 0.5), RenderTransform=new RotateTransform(90)};
+                    _waveControls[Tuple.Create("v", i, j).ToString()] = w;
+                    canvas.Children.Add(w);
                 }
             }
 
+            
             this.MouseDown += (sender, arg) => {
                 var p = arg.GetPosition(canvas);
                 var i = (p.X / canvas.ActualWidth * 20).FloorInt();
@@ -55,6 +75,8 @@ namespace Circuit {
             };
         }
         public void ShowCells() {
+            var w = canvas.ActualWidth / 20;
+            var h = canvas.ActualHeight / 20;
             foreach (var i in 20.Range()) {
                 foreach (var j in 20.Range()) {
                     var c = _cells[i, j];
@@ -67,13 +89,26 @@ namespace Circuit {
                         c.Control.State = c.State;
                     }
                     if (c.Control != null) {
-                        var w = canvas.ActualWidth/20;
-                        var h = canvas.ActualHeight/20;
                         c.Control.SetValue(Canvas.LeftProperty, i*w);
                         c.Control.SetValue(Canvas.TopProperty, j*h);
                         c.Control.Width = w;
                         c.Control.Height = h;
                     }
+
+                    var fr = _waveControls[Tuple.Create("<", i, j).ToString()];
+                    var fl = _waveControls[Tuple.Create(">", i, j).ToString()];
+                    var fd = _waveControls[Tuple.Create("^", i, j).ToString()];
+                    var fu = _waveControls[Tuple.Create("v", i, j).ToString()];
+                    fr.Width = fl.Width = fd.Width = fu.Width = w;
+                    fr.Height = fl.Height = fd.Height = fu.Height = h;
+                    fr.SetValue(Canvas.LeftProperty, i * w);
+                    fl.SetValue(Canvas.LeftProperty, i * w);
+                    fd.SetValue(Canvas.LeftProperty, i * w);
+                    fu.SetValue(Canvas.LeftProperty, i * w);
+                    fr.SetValue(Canvas.TopProperty, j * h);
+                    fl.SetValue(Canvas.TopProperty, j * h);
+                    fd.SetValue(Canvas.TopProperty, j * h);
+                    fu.SetValue(Canvas.TopProperty, j * h);
                 }
             }
         }
@@ -154,12 +189,18 @@ namespace Circuit {
                 Wire = wires[Tuple.Create(">", 0, 10)],
                 Detections = new EquatableList<bool>(ReadOnlyList.Repeat(false, dcount))
             };
+            foreach (var e in _waveControls.Values)
+                e.Amplitude = 0;
             foreach (var e in AllCells)
                 e.Trace = 0;
             try {
                 var state = initialState.Super();
                 while (true) {
                     var activeWires = new HashSet<Wire>(state.Amplitudes.Keys.Select(e => e.Wire).Where(e => e != null));
+                    foreach (var e in activeWires.Where(f => _waveControls.ContainsKey(f.Name))) {
+                        var r = state.Amplitudes.Where(f => Equals(f.Key.Wire, e)).Select(f => f.Value.SquaredMagnitude()).Sum();
+                        _waveControls[e.Name].Amplitude = r;
+                    }
                     var activeElements = elements.Where(e => e.Inputs.Any(activeWires.Contains)).ToArray();
 
                     var newState = activeElements.Aggregate(state, (a, e) => a.Transform(e.Apply));
@@ -171,7 +212,7 @@ namespace Circuit {
                 this.Title = ex.ToString();
             }
             foreach (var e in AllCells) {
-                e.Control.Background = new SolidColorBrush(e.Trace == 0 ? Colors.Transparent : Colors.Yellow);
+                //e.Control.Background = new SolidColorBrush(e.Trace == 0 ? Colors.Transparent : Colors.Yellow);
             }
         }
     }
