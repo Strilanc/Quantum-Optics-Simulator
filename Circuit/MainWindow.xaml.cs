@@ -195,7 +195,10 @@ namespace Circuit {
                 e.Trace = 0;
             try {
                 var state = initialState.Super();
+                var n = 0;
                 while (true) {
+                    n += 1;
+                    if (n > 10000) throw new InvalidOperationException("Overcompute");
                     var activeWires = new HashSet<Wire>(state.Amplitudes.Keys.Select(e => e.Wire).Where(e => e != null));
                     foreach (var e in activeWires.Where(f => _waveControls.ContainsKey(f.Name))) {
                         var r = state.Amplitudes.Where(f => Equals(f.Key.Wire, e)).Select(f => f.Value.SquaredMagnitude()).Sum();
@@ -210,9 +213,6 @@ namespace Circuit {
                 this.Title = state.ToString();
             } catch (Exception ex) {
                 this.Title = ex.ToString();
-            }
-            foreach (var e in AllCells) {
-                //e.Control.Background = new SolidColorBrush(e.Trace == 0 ? Colors.Transparent : Colors.Yellow);
             }
         }
     }
