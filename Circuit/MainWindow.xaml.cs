@@ -33,7 +33,6 @@ namespace Circuit {
         
         public MainWindow() {
             InitializeComponent();
-            
             _cells = new Cell[20, 20];
             foreach (var i in 20.Range()) {
                 foreach (var j in 20.Range()) {
