@@ -115,11 +115,19 @@ namespace Quantum {
             context2D.DrawText(Message, _textFormat, new RectangleF(-sizeX / 2, -sizeY / 2, +sizeX / 2, sizeY / 2), _sceneColorBrush);
 
             using (var brush = new SolidColorBrush(renderParams.DevicesAndContexts.ContextDirect2D, Color.White)) {
-                foreach (var c in AllCells) {
-                    var w = (float)renderParams.SizedDeviceResources.RenderTargetBounds.Width/CellColumnCount;
-                    var h = (float)renderParams.SizedDeviceResources.RenderTargetBounds.Height/CellRowCount;
-                    var cr = new RectangleF(w*c.X, h*c.Y, w*(c.X + 1), h*(c.Y + 1));
-                    context2D.DrawText(c.State == CellState.Empty ? "." : c.State.ToString(), _textFormat, cr, brush);
+                using (var brush2 = new SolidColorBrush(renderParams.DevicesAndContexts.ContextDirect2D, Color.Blue)) {
+                    foreach (var c in AllCells) {
+                        var w = (float)renderParams.SizedDeviceResources.RenderTargetBounds.Width/CellColumnCount;
+                        var h = (float)renderParams.SizedDeviceResources.RenderTargetBounds.Height/CellRowCount;
+                        
+                        var a = (float)Math.Min(1, Math.Max(0, c.Trace.Magnitude)) / 2;
+                        var cr2 = new RectangleF(w * (c.X + 0.5f - a), h * (c.Y + 0.5f - a), w * (c.X + .5f + a), h * (c.Y + 0.5f + a));
+                        context2D.FillRectangle(cr2, brush2);
+
+                        var cr = new RectangleF(w * c.X, h * c.Y, w * (c.X + 1), h * (c.Y + 1));
+                        context2D.DrawText(c.State == CellState.Empty ? "." : c.State.ToString(), _textFormat, cr, brush);
+
+                    }
                 }
             }
             //context2D.Transform =
