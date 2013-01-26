@@ -56,8 +56,8 @@ public struct Superposition<T> {
     /// Fair warning: this function (if it ran in constant time) is strictly more powerful than a quantum computer.
     /// Try to ensure the defined transition corresponds to a unitary matrix, or at least could be by adding sacrifical bits to trash.
     /// </summary>
-    public Superposition<T> Transform(Func<T, Superposition<T>> transitions) {
-        return FromFragments(
+    public Superposition<TOut> Transform<TOut>(Func<T, Superposition<TOut>> transitions) {
+        return Superposition<TOut>.FromFragments(
             Amplitudes
             .SelectMany(e => 
                 transitions(e.Key)
@@ -77,5 +77,14 @@ public struct Superposition<T> {
                     return String.Format("{1} |{0}>", pair.Key, s);
                 })
                 .Where(e => e != null));
+    }
+    public object Identity { get { return Amplitudes.ToEquatable(); } }
+    public override int GetHashCode() {
+        return Identity.GetHashCode();
+    }
+    public override bool Equals(object obj) {
+        if (!(obj is Superposition<T>)) return false;
+        var other = (Superposition<T>)obj;
+        return Equals(Identity, other.Identity);
     }
 }

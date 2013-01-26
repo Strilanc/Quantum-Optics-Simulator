@@ -1,35 +1,39 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Immutable;
 using System.Linq;
-using Strilanc.LinqToCollections;
+using Strilanc.Value;
 
 public struct CircuitState {
-    public static MockProperty<CircuitState, Wire> WireProp {
-        get {
-            return new MockProperty<CircuitState, Wire>(
-                e => e.Wire,
-                (e, v) => new CircuitState {
-                    Wire = v,
-                    Detections = e.Detections
-                });
-        }
+    public readonly May<Photon> Photon;
+    private readonly ImmutableDictionary<object, ImmutableList<object>> _detections;
+    public ImmutableDictionary<object, ImmutableList<object>> Detections { get { return _detections ?? ImmutableDictionary<object, ImmutableList<object>>.Empty; } }
+    public CircuitState(May<Photon> photon, ImmutableDictionary<object, ImmutableList<object>> detections = null) : this() {
+        Photon = photon;
+        _detections = detections;
     }
-    public static MockProperty<CircuitState, bool> DetectorProp(int i) {
-        return new MockProperty<CircuitState, bool>(
-            e => e.Detections[i],
-            (e, b) => new CircuitState {
-                Wire = e.Wire,
-                Detections = new EquatableList<bool>(e.Detections.Impose(b, i).ToArray())
-            });
+    public CircuitState WithDetection(object key, int time, bool destroy) {
+        var cur = Detections.ContainsKey(key) ? Detections[key] : ImmutableList<object>.Empty;
+        return new CircuitState(Photon.Where(_ => !destroy), Detections.SetItem(key, cur.Add(new { Photon, time })));
     }
-
-    public Wire Wire;
-    public EquatableList<bool> Detections;
+    public CircuitState WithPhoton(May<Photon> photon) {
+        return new CircuitState(photon, Detections);
+    }
     public override string ToString() {
-        var s = new List<string>();
-        var d = this.Detections;
-        if (this.Wire != null) s.Add(this.Wire.ToString());
-        s.AddRange(this.Detections.Count.Range().Where(e => d[e]).Select(e => e + ""));
-        return String.Join(",", s);
+        return string.Format(
+            "{0}, {1}",
+            Photon,
+            Detections.AsEnumerable().Select(e => 
+                string.Format(
+                    "{0}: {1}", 
+                    e.Key, 
+                    e.Value.StringJoin(","))).StringJoin("; "));
+    }
+    public object Identity { get { return new {Photon, Det = Detections.Select(e => new { e.Key, Val = e.Value.ToEquatable()}).ToEquatable()}; } }
+    public override int GetHashCode() {
+        return Identity.GetHashCode();
+    }
+    public override bool Equals(object obj) {
+        if (!(obj is CircuitState)) return false;
+        var other = (CircuitState)obj;
+        return Equals(Identity, other.Identity);
     }
 }

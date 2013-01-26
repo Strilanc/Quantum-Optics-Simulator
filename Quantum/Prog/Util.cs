@@ -21,8 +21,17 @@ public static class Util {
             () => Math.Min(items.Count, minCount),
             i => i < items.Count ? items[i] : padding);
     }
+    public static string StringJoin<T>(this IEnumerable<T> items, string separator) {
+        return string.Join(separator, items);
+    }
     public static T With<T, F>(this T instance, MockProperty<T, F> property, F field) {
         return property.WithValue(instance, field);
+    }
+    public static object ToEquatable<T>(this IEnumerable<T> dic) {
+        return new EquatableList<T>(dic.ToArray());
+    }
+    public static object ToEquatable<K, V>(this IReadOnlyDictionary<K, V> dic) {
+        return new EquatableList<object>(dic.OrderBy(e => e.Key.GetHashCode()).Select(e => (object)e).ToArray());
     }
     public static IReadOnlyDictionary<K, V> WithDefaultResult<K, V>(this IReadOnlyDictionary<K, V> dic, V def = default(V)) {
         return new AnonymousReadOnlyDictionary<K, V>(

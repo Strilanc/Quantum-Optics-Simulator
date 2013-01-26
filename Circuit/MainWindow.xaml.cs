@@ -7,6 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using Strilanc.LinqToCollections;
+using Strilanc.Value;
 
 namespace Circuit {
     public partial class MainWindow {
@@ -40,19 +41,19 @@ namespace Circuit {
                     Wave w;
 
                     w = new Wave() { RenderTransformOrigin=new Point(0.5, 0.5), RenderTransform=new RotateTransform(180)};
-                    _waveControls[Tuple.Create("<", i, j).ToString()] = w;
+                    _waveControls[Tuple.Create(Velocity.MinusX, i, j).ToString()] = w;
                     canvas.Children.Add(w);
                     
                     w = new Wave() { RenderTransformOrigin=new Point(0.5, 0.5)};
-                    _waveControls[Tuple.Create(">", i, j).ToString()] = w;
+                    _waveControls[Tuple.Create(Velocity.PlusX, i, j).ToString()] = w;
                     canvas.Children.Add(w);
                     
                     w = new Wave() { RenderTransformOrigin=new Point(0.5, 0.5), RenderTransform=new RotateTransform(270)};
-                    _waveControls[Tuple.Create("^", i, j).ToString()] = w;
+                    _waveControls[Tuple.Create(Velocity.MinusY, i, j).ToString()] = w;
                     canvas.Children.Add(w);
                     
                     w = new Wave() { RenderTransformOrigin=new Point(0.5, 0.5), RenderTransform=new RotateTransform(90)};
-                    _waveControls[Tuple.Create("v", i, j).ToString()] = w;
+                    _waveControls[Tuple.Create(Velocity.PlusY, i, j).ToString()] = w;
                     canvas.Children.Add(w);
                 }
             }
@@ -94,10 +95,10 @@ namespace Circuit {
                         c.Control.Height = h;
                     }
 
-                    var fr = _waveControls[Tuple.Create("<", i, j).ToString()];
-                    var fl = _waveControls[Tuple.Create(">", i, j).ToString()];
-                    var fd = _waveControls[Tuple.Create("^", i, j).ToString()];
-                    var fu = _waveControls[Tuple.Create("v", i, j).ToString()];
+                    var fr = _waveControls[Tuple.Create(Velocity.MinusX, i, j).ToString()];
+                    var fl = _waveControls[Tuple.Create(Velocity.PlusX, i, j).ToString()];
+                    var fd = _waveControls[Tuple.Create(Velocity.MinusY, i, j).ToString()];
+                    var fu = _waveControls[Tuple.Create(Velocity.PlusY, i, j).ToString()];
                     fr.Width = fl.Width = fd.Width = fu.Width = w;
                     fr.Height = fl.Height = fd.Height = fu.Height = h;
                     fr.SetValue(Canvas.LeftProperty, i * w);
@@ -118,76 +119,38 @@ namespace Circuit {
                        select _cells[i, j];
             }
         }
-        private struct CellDiry<T> : ICircuitElement<T> {
-            public ICircuitElement<T> Element;
-            public Cell Cell;
-            public Superposition<T> Apply(T state) {
-                Cell.Trace = 1;
-                return Element.Apply(state);
-            }
-            public IReadOnlyList<Wire> Inputs { get { return Element.Inputs; } }
-        }
         public void ComputeCircuit() {
-            var wp = CircuitState.WireProp;
-            var wires = 
-                Enumerable.Range(-1, 22)
-                .SelectMany(x => 
-                    Enumerable.Range(-1, 22)
-                    .SelectMany(y => new[] {
-                        Tuple.Create("^", x, y),
-                        Tuple.Create("<", x, y),
-                        Tuple.Create(">", x, y),
-                        Tuple.Create("v", x, y)}))
-                .ToDictionary(e => e, e => new Wire(e.ToString()));
-            var dw = wires.WithDefaultResult();
-            var dcount = 0;
             var elements = 
                 AllCells
-                .Select<Cell, IEnumerable<ICircuitElement<CircuitState>>>(e => {
-                    var inLeft = dw[Tuple.Create(">", e.X, e.Y)];
-                    var inRight = dw[Tuple.Create("<", e.X, e.Y)];
-                    var inUp = dw[Tuple.Create("v", e.X, e.Y)];
-                    var inDown = dw[Tuple.Create("^", e.X, e.Y)];
-
-                    var outLeft = dw[Tuple.Create("<", e.X - 1, e.Y)];
-                    var outRight = dw[Tuple.Create(">", e.X + 1, e.Y)];
-                    var outUp = dw[Tuple.Create("^", e.X, e.Y - 1)];
-                    var outDown = dw[Tuple.Create("v", e.X, e.Y + 1)];
-
-                    var ins = new[] { inRight, inUp, inLeft, inDown };
-                    var outs = new[] { outRight, outUp, outLeft, outDown };
-
-                    var r1 = new[] { 1, 0, 3, 2 };
-                    var r2 = new[] { 3, 2, 1, 0 };
-                    if (e.State == CellState.Empty)
-                        return 4.Range().Select(i => wp.Propagate(ins[i], outs[(i + 2) % 4]));
-                    if (e.State == CellState.BackSlashSplitter)
-                        return 4.Range().Select(i => wp.Split(ins[i], outs[(i + 2) % 4], outs[r1[i]]));
-                    if (e.State == CellState.ForeSlashSplitter)
-                        return 4.Range().Select(i => wp.Split(ins[i], outs[(i + 2) % 4], outs[r2[i]]));
-                    if (e.State == CellState.BackSlashMirror)
-                        return 4.Range().Select(i => wp.Reflect(ins[i], outs[r1[i]]));
-                    if (e.State == CellState.ForeSlashMirror)
-                        return 4.Range().Select(i => wp.Reflect(ins[i], outs[r2[i]]));
-                    if (e.State == CellState.DetectorTerminate) {
-                        var d = CircuitState.DetectorProp(dcount++);
-                        return 4.Range().Select(i => wp.Detect(ins[i], d));
-                    }
-                    if (e.State == CellState.DetectorPropagate) {
-                        var d = CircuitState.DetectorProp(dcount++);
-                        return 4.Range().Select(i => wp.Detect(ins[i], d, outs[(i + 2) % 4]));
+                .Where(e => e.State != CellState.Empty)
+                .ToDictionary(e => new Position(e.X, e.Y), e => {
+                    Func<Photon, Superposition<Photon>> x;
+                    if (e.State == CellState.BackSlashSplitter) {
+                        x = p => p.HalfSwapVelocity();
+                    } else if (e.State == CellState.ForeSlashSplitter) {
+                        x = p => p.HalfNegateSwapVelocity();
+                    } else if (e.State == CellState.BackSlashMirror) {
+                        x = p => p.SwapVelocity();
+                    } else if (e.State == CellState.ForeSlashMirror) {
+                        x = p => p.SwapNegateVelocity();
+                    } else {
+                        x = null;
                     }
 
-                    throw new NotImplementedException();
-                })
-                .Zip(AllCells, (c, ce) => c.Select(e => new CellDiry<CircuitState> { Cell = ce, Element = e}))
-                .SelectMany(e => e)
-                .ToArray();
+                    Func<CircuitState, Superposition<CircuitState>> x2;
+                    if (x != null) {
+                        x2 = c => c.Photon.Match(p => x(p).Transform<CircuitState>(p2 => c.WithPhoton(p2)), () => c.Super());
+                    } else if (e.State == CellState.DetectorTerminate) {
+                        x2 = c => c.WithDetection(new Position(e.X, e.Y), 0, true);
+                    } else if (e.State == CellState.DetectorPropagate) {
+                        x2 = c => c.WithDetection(new Position(e.X, e.Y), 0, false);
+                    } else 
+                        throw new NotImplementedException();
 
-            var initialState = new CircuitState() {
-                Wire = wires[Tuple.Create(">", 0, 10)],
-                Detections = new EquatableList<bool>(ReadOnlyList.Repeat(false, dcount))
-            };
+                    return x2;
+                });
+
+            var initialState = new CircuitState(new Photon(new Position(0, 0), Velocity.PlusX, Polarization.Horizontal));
             foreach (var e in _waveControls.Values)
                 e.Amplitude = 0;
             foreach (var e in AllCells)
@@ -198,16 +161,26 @@ namespace Circuit {
                 while (true) {
                     n += 1;
                     if (n > 10000) throw new InvalidOperationException("Overcompute");
-                    var activeWires = new HashSet<Wire>(state.Amplitudes.Keys.Select(e => e.Wire).Where(e => e != null));
-                    foreach (var e in activeWires.Where(f => _waveControls.ContainsKey(f.Name))) {
-                        var r = state.Amplitudes.Where(f => Equals(f.Key.Wire, e)).Select(f => f.Value.SquaredMagnitude()).Sum();
-                        _waveControls[e.Name].Amplitude = r;
+                    foreach (var e in state.Amplitudes) {
+                        if (!e.Key.Photon.HasValue) continue;
+                        var p = e.Key.Photon.ForceGetValue();
+                        var s = Tuple.Create(p.Vel, p.Pos.X, p.Pos.Y).ToString();
+                        if (_waveControls.ContainsKey(s))
+                            _waveControls[s].Amplitude = e.Value;
                     }
-                    var activeElements = elements.Where(e => e.Inputs.Any(activeWires.Contains)).ToArray();
 
-                    var newState = activeElements.Aggregate(state, (a, e) => a.Transform(e.Apply));
-                    if (Equals(state, newState)) break;
-                    state = newState;
+                    var newState = state.Transform(e =>
+                        e.Photon
+                        .Where(p => elements.ContainsKey(p.Pos))
+                        .Select(p => elements[p.Pos](e))
+                        .Else(e.Super()));
+                    var newState2 = newState.Transform(e =>
+                        e.Photon
+                        .Where(p => p.Pos.X >= 0 && p.Pos.X < 20 && p.Pos.Y >= 0 && p.Pos.Y < 20)
+                        .Select(p => e.WithPhoton(new Photon(p.Pos + p.Vel, p.Vel, p.Pol)).Super())
+                        .Else(e.Super()));
+                    if (Equals(state, newState2)) break;
+                    state = newState2;
                 }
                 this.Title = state.ToString();
             } catch (Exception ex) {
