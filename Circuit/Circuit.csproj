@@ -34,6 +34,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Angle">
+      <HintPath>..\packages\Strilanc.Angle.1.0.3\lib\portable-net4+sl4+wp7+win8\Angle.dll</HintPath>
+    </Reference>
     <Reference Include="LinqToCollections, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\Strilanc.LinqToCollections.1.0.1\lib\portable-net45+win8\LinqToCollections.dll</HintPath>
