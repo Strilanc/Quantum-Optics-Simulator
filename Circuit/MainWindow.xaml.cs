@@ -205,9 +205,4 @@ namespace Circuit {
             }
         }
     }
-    public static class Util {
-        public static int FloorInt(this double d) {
-            return (int)Math.Floor(d);
-        }
-    }
 }

@@ -1,23 +1,61 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
+using System.Numerics;
+using Circuit.Phys;
 using SharpDX;
 using SharpDX.Direct2D1;
 using SharpDX.DirectWrite;
+using Strilanc.Angle;
 using Strilanc.LinqToCollections;
+using Strilanc.Value;
 using Matrix = SharpDX.Matrix;
 using TextAntialiasMode = SharpDX.Direct2D1.TextAntialiasMode;
 
 namespace Quantum {
     public class CircuitRenderer {
+        public enum CellState {
+            Empty,
+            BackSlashSplitter,
+            ForeSlashSplitter,
+            BackSlashMirror,
+            ForeSlashMirror,
+            DetectorTerminate,
+            DetectorPropagate,
+            HorizontalPolarizer,
+            VerticalPolarizer,
+            BackSlashPolarizer,
+            ForeSlashPolarizer,
+        }
+        public sealed class Cell {
+            public int X;
+            public int Y;
+            public CellState State;
+            public Complex Trace;
+        }
+
+        public readonly Cell[,] _cells;
+        public int CellColumnCount = 20;
+        public int CellRowCount = 20;
+
         private const float Tau = (float)Math.PI * 2;
         private TextFormat _textFormat;
         private Brush _sceneColorBrush;
         private PathGeometry1 _pathGeometry1;
         private Stopwatch _clock;
+        private string Message = "";
 
         public CircuitRenderer() {
             EnableClear = true;
             Show = true;
+
+            _cells = new Cell[CellColumnCount, CellRowCount];
+            foreach (var i in CellColumnCount.Range()) {
+                foreach (var j in CellRowCount.Range()) {
+                    _cells[i, j] = new Cell { X = i, Y = j, State = CellState.Empty };
+                }
+            }
         }
 
         public bool EnableClear { get; set; }
@@ -74,7 +112,7 @@ namespace Quantum {
 
             context2D.TextAntialiasMode = TextAntialiasMode.Grayscale;
             context2D.Transform = Matrix.RotationZ((float)(Math.Cos(t * Tau / 2))) * Matrix.Translation(centerX, centerY, 0);
-            context2D.DrawText("SharpDX\nDirect2D1\nDirectWrite", _textFormat, new RectangleF(-sizeX / 2, -sizeY / 2, +sizeX / 2, sizeY / 2), _sceneColorBrush);
+            context2D.DrawText(Message, _textFormat, new RectangleF(-sizeX / 2, -sizeY / 2, +sizeX / 2, sizeY / 2), _sceneColorBrush);
 
             context2D.Transform =
                   Matrix.Scaling((float)(Math.Cos(t * Tau / 4 * 0.25) / 4 + 0.75))
@@ -84,6 +122,93 @@ namespace Quantum {
 
             context2D.EndDraw();
         }
+        private IEnumerable<Cell> AllCells {
+            get {
+                return from i in CellColumnCount.Range()
+                       from j in CellRowCount.Range()
+                       select _cells[i, j];
+            }
+        }
+        public void ComputeCircuit() {
+            var elements =
+                AllCells
+                .Where(e => e.State != CellState.Empty)
+                .ToDictionary(e => new Position(e.X, e.Y), e => {
+                    Func<Photon, Superposition<Photon>> x;
+                    if (e.State == CellState.BackSlashSplitter) {
+                        x = p => p.HalfSwapVelocity();
+                    } else if (e.State == CellState.ForeSlashSplitter) {
+                        x = p => p.HalfNegateSwapVelocity();
+                    } else if (e.State == CellState.BackSlashMirror) {
+                        x = p => p.SwapVelocity();
+                    } else if (e.State == CellState.ForeSlashMirror) {
+                        x = p => p.SwapNegateVelocity();
+                    } else {
+                        x = null;
+                    }
 
+                    Func<Photon, Superposition<May<Photon>>> x3;
+                    if (x != null) {
+                        x3 = p => x(p).Transform<May<Photon>>(v => v.Maybe());
+                    } else if (e.State == CellState.ForeSlashPolarizer) {
+                        x3 = p => p.Polarize(new Polarization(Dir.FromVector(1, 1)));
+                    } else if (e.State == CellState.BackSlashPolarizer) {
+                        x3 = p => p.Polarize(new Polarization(Dir.FromVector(-1, 1)));
+                    } else if (e.State == CellState.HorizontalPolarizer) {
+                        x3 = p => p.Polarize(new Polarization(Dir.FromVector(1, 0)));
+                    } else if (e.State == CellState.VerticalPolarizer) {
+                        x3 = p => p.Polarize(new Polarization(Dir.FromVector(0, 1)));
+                    } else {
+                        x3 = null;
+                    }
+
+                    Func<CircuitState, Superposition<CircuitState>> x2;
+                    if (x3 != null) {
+                        x2 = c => c.Photon.Match(p => x3(p).Transform<CircuitState>(p2 => c.WithPhoton(p2)), () => c.Super());
+                    } else if (e.State == CellState.DetectorTerminate) {
+                        x2 = c => c.WithPhoton(May.NoValue);
+                    } else if (e.State == CellState.DetectorPropagate) {
+                        x2 = c => c.WithDetection(new Position(e.X, e.Y));
+                    } else {
+                        throw new NotImplementedException();
+                    }
+
+                    return x2;
+                });
+
+            var initialState = new CircuitState(TimeSpan.Zero, new Photon(new Position(0, 0), Velocity.PlusX, default(Polarization)));
+            foreach (var e in AllCells)
+                e.Trace = 0;
+            try {
+                var state = initialState.Super();
+                var n = 0;
+                while (true) {
+                    n += 1;
+                    if (n > 10000) throw new InvalidOperationException("Overcompute");
+                    foreach (var e in state.Amplitudes) {
+                        if (!e.Key.Photon.HasValue) continue;
+                        var p = e.Key.Photon.ForceGetValue();
+                        if (p.Pos.X >= 0 && p.Pos.X < CellColumnCount && p.Pos.Y >= 0 && p.Pos.Y < CellRowCount)
+                            _cells[p.Pos.X, p.Pos.Y].Trace = e.Value;
+                    }
+
+                    var newState = state.Transform(e =>
+                        e.Photon
+                        .Where(p => elements.ContainsKey(p.Pos))
+                        .Select(p => elements[p.Pos](e))
+                        .Else(e.Super()));
+                    var newState2 = newState.Transform(e =>
+                        e.Photon
+                        .Where(p => p.Pos.X >= 0 && p.Pos.X < CellColumnCount && p.Pos.Y >= 0 && p.Pos.Y < CellRowCount)
+                        .Select(p => e.WithTick().Super())
+                        .Else(e.Super()));
+                    if (Equals(state, newState2)) break;
+                    state = newState2;
+                }
+                Message = state.ToString();
+            } catch (Exception ex) {
+                Message = ex.ToString();
+            }
+        }
     }
 }

@@ -36,6 +36,9 @@ public static class Util2 {
             .WithInlineLatestLifetime()
             .SelectMany(e => e.Value.TakeUntilDead(e.Lifetime));
     }
+    public static int FloorInt(this double d) {
+        return (int)Math.Floor(d);
+    }
     public static IObservable<T> TakeUntilDead<T>(this IObservable<T> observable, Lifetime lifetime) {
         if (observable == null) throw new ArgumentNullException("observable");
         
