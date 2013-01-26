@@ -22,6 +22,10 @@ namespace Circuit {
                 splitterFore.Visibility = V(value == MainWindow.CellState.ForeSlashSplitter);
                 detectorCatch.Visibility = V(value == MainWindow.CellState.DetectorTerminate);
                 detectorPass.Visibility = V(value == MainWindow.CellState.DetectorPropagate);
+                polarizerVertical.Visibility = V(value == MainWindow.CellState.VerticalPolarizer);
+                polarizerHorizontal.Visibility = V(value == MainWindow.CellState.HorizontalPolarizer);
+                polarizerBackSlash.Visibility = V(value == MainWindow.CellState.BackSlashPolarizer);
+                polarizerForeSlash.Visibility = V(value == MainWindow.CellState.ForeSlashPolarizer);
             }
         }
     }

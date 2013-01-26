@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Shapes;
 using Circuit.Phys;
+using Strilanc.Angle;
 using Strilanc.LinqToCollections;
 using Strilanc.Value;
 
@@ -20,18 +20,21 @@ namespace Circuit {
             ForeSlashMirror,
             DetectorTerminate,
             DetectorPropagate,
+            HorizontalPolarizer,
+            VerticalPolarizer,
+            BackSlashPolarizer,
+            ForeSlashPolarizer,
         }
-        private class Cell {
+        private sealed class Cell {
             public int X;
             public int Y;
             public CellState State;
             public CircuitElementControl Control;
             public bool Dirty;
-            public double Trace;
         }
 
-        private Dictionary<string, Wave> _waveControls = new Dictionary<string, Wave>();
-        private Cell[,] _cells;
+        private readonly Dictionary<string, Wave> _waveControls = new Dictionary<string, Wave>();
+        private readonly Cell[,] _cells;
         
         public MainWindow() {
             InitializeComponent();
@@ -39,21 +42,20 @@ namespace Circuit {
             foreach (var i in 20.Range()) {
                 foreach (var j in 20.Range()) {
                     _cells[i, j] = new Cell {X = i, Y = j, State = CellState.Empty, Control = null, Dirty=true};
-                    Wave w;
 
-                    w = new Wave() { RenderTransformOrigin=new Point(0.5, 0.5), RenderTransform=new RotateTransform(180)};
+                    var w = new Wave { RenderTransformOrigin=new Point(0.5, 0.5), RenderTransform=new RotateTransform(180)};
                     _waveControls[Tuple.Create(Velocity.MinusX, i, j).ToString()] = w;
                     canvas.Children.Add(w);
                     
-                    w = new Wave() { RenderTransformOrigin=new Point(0.5, 0.5)};
+                    w = new Wave { RenderTransformOrigin=new Point(0.5, 0.5)};
                     _waveControls[Tuple.Create(Velocity.PlusX, i, j).ToString()] = w;
                     canvas.Children.Add(w);
                     
-                    w = new Wave() { RenderTransformOrigin=new Point(0.5, 0.5), RenderTransform=new RotateTransform(270)};
+                    w = new Wave { RenderTransformOrigin=new Point(0.5, 0.5), RenderTransform=new RotateTransform(270)};
                     _waveControls[Tuple.Create(Velocity.MinusY, i, j).ToString()] = w;
                     canvas.Children.Add(w);
                     
-                    w = new Wave() { RenderTransformOrigin=new Point(0.5, 0.5), RenderTransform=new RotateTransform(90)};
+                    w = new Wave { RenderTransformOrigin=new Point(0.5, 0.5), RenderTransform=new RotateTransform(90)};
                     _waveControls[Tuple.Create(Velocity.PlusY, i, j).ToString()] = w;
                     canvas.Children.Add(w);
                 }
@@ -65,7 +67,7 @@ namespace Circuit {
                 var i = (p.X / canvas.ActualWidth * 20).FloorInt();
                 var j = (p.Y / canvas.ActualHeight * 20).FloorInt();
                 var c = _cells[i, j];
-                c.State = (CellState)(((int)c.State + 1) % 7);
+                c.State = (CellState)(((int)c.State + (arg.ChangedButton == MouseButton.Left ? 1 : -1) + 11) % 11);
                 c.Dirty = true;
                 ComputeCircuit();
                 ShowCells();
@@ -138,24 +140,38 @@ namespace Circuit {
                         x = null;
                     }
 
-                    Func<CircuitState, Superposition<CircuitState>> x2;
+                    Func<Photon, Superposition<May<Photon>>> x3;
                     if (x != null) {
-                        x2 = c => c.Photon.Match(p => x(p).Transform<CircuitState>(p2 => c.WithPhoton(p2)), () => c.Super());
+                        x3 = p => x(p).Transform<May<Photon>>(v => v.Maybe());
+                    } else if (e.State == CellState.ForeSlashPolarizer) {
+                        x3 = p => p.Polarize(new Polarization(Dir.FromVector(1, 1)));
+                    } else if (e.State == CellState.BackSlashPolarizer) {
+                        x3 = p => p.Polarize(new Polarization(Dir.FromVector(-1, 1)));
+                    } else if (e.State == CellState.HorizontalPolarizer) {
+                        x3 = p => p.Polarize(new Polarization(Dir.FromVector(1, 0)));
+                    } else if (e.State == CellState.VerticalPolarizer) {
+                        x3 = p => p.Polarize(new Polarization(Dir.FromVector(0, 1)));
+                    } else {
+                        x3 = null;
+                    }
+
+                    Func<CircuitState, Superposition<CircuitState>> x2;
+                    if (x3 != null) {
+                        x2 = c => c.Photon.Match(p => x3(p).Transform<CircuitState>(p2 => c.WithPhoton(p2)), () => c.Super());
                     } else if (e.State == CellState.DetectorTerminate) {
-                        x2 = c => c.WithDetection(new Position(e.X, e.Y), 0, true);
+                        x2 = c => c.WithPhoton(May.NoValue);
                     } else if (e.State == CellState.DetectorPropagate) {
-                        x2 = c => c.WithDetection(new Position(e.X, e.Y), 0, false);
-                    } else 
+                        x2 = c => c.WithDetection(new Position(e.X, e.Y));
+                    } else {
                         throw new NotImplementedException();
+                    }
 
                     return x2;
                 });
 
-            var initialState = new CircuitState(new Photon(new Position(0, 0), Velocity.PlusX, default(Polarization)));
+            var initialState = new CircuitState(TimeSpan.Zero, new Photon(new Position(0, 0), Velocity.PlusX, default(Polarization)));
             foreach (var e in _waveControls.Values)
                 e.Amplitude = 0;
-            foreach (var e in AllCells)
-                e.Trace = 0;
             try {
                 var state = initialState.Super();
                 var n = 0;
@@ -178,7 +194,7 @@ namespace Circuit {
                     var newState2 = newState.Transform(e =>
                         e.Photon
                         .Where(p => p.Pos.X >= 0 && p.Pos.X < 20 && p.Pos.Y >= 0 && p.Pos.Y < 20)
-                        .Select(p => e.WithPhoton(new Photon(p.Pos + p.Vel, p.Vel, p.Pol)).Super())
+                        .Select(p => e.WithTick().Super())
                         .Else(e.Super()));
                     if (Equals(state, newState2)) break;
                     state = newState2;

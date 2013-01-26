@@ -1,34 +1,44 @@
-﻿using System.Collections.Immutable;
-using System.Linq;
+﻿using System;
+using System.Collections.Immutable;
 using Circuit.Phys;
 using Strilanc.Value;
 
 public struct CircuitState {
+    public readonly TimeSpan Time;
     public readonly May<Photon> Photon;
-    private readonly ImmutableDictionary<object, ImmutableList<object>> _detections;
-    public ImmutableDictionary<object, ImmutableList<object>> Detections { get { return _detections ?? ImmutableDictionary<object, ImmutableList<object>>.Empty; } }
-    public CircuitState(May<Photon> photon, ImmutableDictionary<object, ImmutableList<object>> detections = null) : this() {
+    private readonly ImmutableList<RecordedEvent<object>> _absorptions;
+    public ImmutableList<RecordedEvent<object>> Absorptions { get { return _absorptions ?? ImmutableList<RecordedEvent<object>>.Empty; } }
+    public CircuitState(TimeSpan time, May<Photon> photon, ImmutableList<RecordedEvent<object>> absorptions = null) {
         Photon = photon;
-        _detections = detections;
+        _absorptions = absorptions;
+        Time = time;
     }
-    public CircuitState WithDetection(object key, int time, bool destroy) {
-        var cur = Detections.ContainsKey(key) ? Detections[key] : ImmutableList<object>.Empty;
-        return new CircuitState(Photon.Where(_ => !destroy), Detections.SetItem(key, cur.Add(new { Photon, time })));
+    public CircuitState WithDetection(object detection) {
+        return new CircuitState(Time, Photon, Absorptions.Add(new RecordedEvent<object>(detection, Time)));
     }
     public CircuitState WithPhoton(May<Photon> photon) {
-        return new CircuitState(photon, Detections);
+        var s = this;
+        return photon.Select(p => new CircuitState(s.Time, p, s.Absorptions))
+            .Else(
+                Photon.Select(p => new CircuitState(s.Time, May.NoValue, s.Absorptions).WithDetection(p)).
+                Else(this));
+    }
+    public CircuitState WithTime(TimeSpan time) {
+        return new CircuitState(time, Photon, Absorptions);
+    }
+    public CircuitState WithTick() {
+        return new CircuitState(
+            Time + TimeSpan.FromMilliseconds(1),
+            Photon.Select(e => new Photon(e.Pos + e.Vel, e.Vel, e.Pol)),
+            Absorptions);
     }
     public override string ToString() {
         return string.Format(
             "{0}, {1}",
             Photon,
-            Detections.AsEnumerable().Select(e => 
-                string.Format(
-                    "{0}: {1}", 
-                    e.Key, 
-                    e.Value.StringJoin(","))).StringJoin("; "));
+            Absorptions.StringJoin(","));
     }
-    public object Identity { get { return new {Photon, Det = Detections.Select(e => new { e.Key, Val = e.Value.ToEquatable()}).ToEquatable()}; } }
+    public object Identity { get { return new {Photon, Abs = Absorptions}; } }
     public override int GetHashCode() {
         return Identity.GetHashCode();
     }

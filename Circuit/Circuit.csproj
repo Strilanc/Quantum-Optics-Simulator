@@ -107,6 +107,7 @@
       <DependentUpon>CircuitElementControl.xaml</DependentUpon>
     </Compile>
     <Compile Include="Circuit\CircuitState.cs" />
+    <Compile Include="Phys\RecordedEvent.cs" />
     <Compile Include="Phys\Photon.cs" />
     <Compile Include="Math\ComplexMatrix.cs" />
     <Compile Include="Math\ComplexVector.cs" />

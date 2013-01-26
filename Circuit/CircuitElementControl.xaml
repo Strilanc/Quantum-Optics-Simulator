@@ -5,7 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:circuit="clr-namespace:Circuit"
              mc:Ignorable="d" 
              d:DesignHeight="300" d:DesignWidth="300">
-    <Grid Margin="10">
+    <Grid Margin="3">
         <Image Visibility="Collapsed" x:Name="splitterFore" Source="Assets\Splitter_TL_BR.png" RenderTransformOrigin="0.5,0.5">
             <Image.RenderTransform>
                 <ScaleTransform ScaleY="-1"/>
@@ -23,5 +23,34 @@
         <Rectangle Visibility="Collapsed" x:Name="empty" Fill="Black" Width="1" Height="1"/>
         <Image Visibility="Collapsed" x:Name="detectorCatch" Source="Assets\PhotonCatcher.png"/>
         <Image Visibility="Collapsed" x:Name="detectorPass" Source="Assets\PhotonNoter.png"/>
+
+        <Grid Visibility="Collapsed" x:Name="polarizerHorizontal">
+            <Ellipse Fill="Red" Height="5" RenderTransformOrigin="0.5,0.5">
+                <Ellipse.RenderTransform>
+                    <RotateTransform Angle="0"/>
+                </Ellipse.RenderTransform>
+            </Ellipse>
+        </Grid>
+        <Grid Visibility="Collapsed" x:Name="polarizerBackSlash">
+            <Ellipse Fill="Red" Height="5" RenderTransformOrigin="0.5,0.5">
+                <Ellipse.RenderTransform>
+                    <RotateTransform Angle="45"/>
+                </Ellipse.RenderTransform>
+            </Ellipse>
+        </Grid>
+        <Grid Visibility="Collapsed" x:Name="polarizerVertical">
+            <Ellipse Fill="Red" Height="5" RenderTransformOrigin="0.5,0.5">
+                <Ellipse.RenderTransform>
+                    <RotateTransform Angle="90"/>
+                </Ellipse.RenderTransform>
+            </Ellipse>
+        </Grid>
+        <Grid Visibility="Collapsed" x:Name="polarizerForeSlash">
+            <Ellipse Fill="Red" Height="5" RenderTransformOrigin="0.5,0.5">
+                <Ellipse.RenderTransform>
+                    <RotateTransform Angle="130"/>
+                </Ellipse.RenderTransform>
+            </Ellipse>
+        </Grid>
     </Grid>
 </UserControl>

@@ -19,9 +19,9 @@ public struct Superposition<T> {
 
     public Superposition(IReadOnlyDictionary<T, Complex> state) {
         if (state == null) throw new ArgumentNullException("state");
-        var s = state.Values.Select(e => e.SquaredMagnitude()).Sum();
-        if (Math.Abs(s - 1) > 0.0001)
-            throw new ArgumentException("Not unitary");
+        //var s = state.Values.Select(e => e.SquaredMagnitude()).Sum();
+        //if (Math.Abs(s - 1) > 0.0001)
+        //    throw new ArgumentException("Not unitary");
         this._state = state;
     }
     public static Superposition<T> FromPureValue(T value) {
@@ -43,12 +43,19 @@ public struct Superposition<T> {
     public static Superposition<T> operator *(Superposition<T> value, Complex factor) {
         return new Superposition<T>(value.Amplitudes.SelectValue(e => e.Value * factor));
     }
-    public static Superposition<T> operator +(Superposition<T> value1, Superposition<T> value2) {
+    public static Superposition<T> operator |(Superposition<T> value1, Superposition<T> value2) {
         return FromFragments(
             value1
             .Amplitudes
             .Concat(value2.Amplitudes)
             .Select(e => new KeyValuePair<T, Complex>(e.Key, e.Value * Math.Sqrt(0.5))));
+    }
+    public static Superposition<T> operator +(Superposition<T> value1, Superposition<T> value2) {
+        return FromFragments(
+            value1
+            .Amplitudes
+            .Concat(value2.Amplitudes)
+            .Select(e => new KeyValuePair<T, Complex>(e.Key, e.Value)));
     }
 
     /// <summary>
