@@ -103,6 +103,7 @@
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Circuit\CircuitState.cs" />
     <Compile Include="CommonDX\DeviceResources.cs" />
     <Compile Include="CommonDX\DevicesAndContexts.cs" />
     <Compile Include="CommonDX\DirectXResources.cs" />
@@ -112,8 +113,20 @@
     <Compile Include="MainPage.xaml.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Math\ComplexMatrix.cs" />
+    <Compile Include="Math\ComplexVector.cs" />
+    <Compile Include="Phys\Photon.cs" />
+    <Compile Include="Phys\Polarization.cs" />
+    <Compile Include="Phys\Position.cs" />
+    <Compile Include="Phys\RecordedEvent.cs" />
+    <Compile Include="Phys\Superposition.cs" />
+    <Compile Include="Phys\Velocity.cs" />
+    <Compile Include="Prog\EquatableList.cs" />
+    <Compile Include="Prog\MockProperty.cs" />
+    <Compile Include="Prog\Named.cs" />
+    <Compile Include="Prog\Util.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="CircuitRenderer.cs" />
+    <Compile Include="Circuit\CircuitRenderer.cs" />
     <Compile Include="Util\AnonymousDisposable.cs" />
     <Compile Include="Util\IObservableLatest.cs" />
     <Compile Include="Util\ObservableValue.cs" />
@@ -149,6 +162,9 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="Angle">
+      <HintPath>..\packages\Strilanc.Angle.1.0.3\lib\portable-net4+sl4+wp7+win8\Angle.dll</HintPath>
+    </Reference>
     <Reference Include="Lifetime">
       <HintPath>..\packages\TwistedOak.Util.Lifetime.1.0.2\lib\portable-net4+win8\Lifetime.dll</HintPath>
     </Reference>
@@ -176,6 +192,9 @@
     <Reference Include="SharpDX.DXGI">
       <HintPath>..\packages\SharpDX.DXGI.2.4.2\lib\win8\SharpDX.DXGI.dll</HintPath>
     </Reference>
+    <Reference Include="System.Collections.Immutable">
+      <HintPath>..\packages\Microsoft.Bcl.Immutable.1.0.5-beta\lib\win8\System.Collections.Immutable.dll</HintPath>
+    </Reference>
     <Reference Include="System.Reactive.Core">
       <HintPath>..\packages\Rx-Core.2.0.21114\lib\WinRT45\System.Reactive.Core.dll</HintPath>
     </Reference>
@@ -184,6 +203,9 @@
     </Reference>
     <Reference Include="System.Reactive.Linq">
       <HintPath>..\packages\Rx-Linq.2.0.21114\lib\WinRT45\System.Reactive.Linq.dll</HintPath>
+    </Reference>
+    <Reference Include="Validation">
+      <HintPath>..\packages\Validation.2.0.2.13022\lib\portable-windows8+net40+sl5+windowsphone8\Validation.dll</HintPath>
     </Reference>
   </ItemGroup>
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '11.0' ">

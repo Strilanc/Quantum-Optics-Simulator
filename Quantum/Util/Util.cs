@@ -8,7 +8,7 @@ using Strilanc.Value;
 using TwistedOak.Collections;
 using TwistedOak.Util;
 
-public static class Util {
+public static class Util2 {
     public static void DisposeUnlessNull(this IDisposable v) {
         if (v != null) v.Dispose();
     }
