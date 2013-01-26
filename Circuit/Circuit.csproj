@@ -107,10 +107,13 @@
       <DependentUpon>CircuitElementControl.xaml</DependentUpon>
     </Compile>
     <Compile Include="Circuit\CircuitState.cs" />
-    <Compile Include="Circuit\Photon.cs" />
+    <Compile Include="Phys\Photon.cs" />
     <Compile Include="Math\ComplexMatrix.cs" />
     <Compile Include="Math\ComplexVector.cs" />
+    <Compile Include="Phys\Polarization.cs" />
+    <Compile Include="Phys\Position.cs" />
     <Compile Include="Phys\Superposition.cs" />
+    <Compile Include="Phys\Velocity.cs" />
     <Compile Include="Prog\EquatableList.cs" />
     <Compile Include="Prog\MockProperty.cs" />
     <Compile Include="Prog\Named.cs" />

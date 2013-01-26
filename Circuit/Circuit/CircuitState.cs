@@ -1,5 +1,6 @@
 ﻿using System.Collections.Immutable;
 using System.Linq;
+using Circuit.Phys;
 using Strilanc.Value;
 
 public struct CircuitState {

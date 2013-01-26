@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using Circuit.Phys;
 using Strilanc.LinqToCollections;
 using Strilanc.Value;
 
@@ -150,7 +151,7 @@ namespace Circuit {
                     return x2;
                 });
 
-            var initialState = new CircuitState(new Photon(new Position(0, 0), Velocity.PlusX, Polarization.Horizontal));
+            var initialState = new CircuitState(new Photon(new Position(0, 0), Velocity.PlusX, default(Polarization)));
             foreach (var e in _waveControls.Values)
                 e.Amplitude = 0;
             foreach (var e in AllCells)
