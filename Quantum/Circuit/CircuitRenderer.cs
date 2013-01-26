@@ -104,21 +104,29 @@ namespace Quantum {
             var centerX = (float)(r.X + sizeX / 2);
             var centerY = (float)(r.Y + sizeY / 2);
 
-            _textFormat = _textFormat ?? new TextFormat(renderParams.DirectXResources.FactoryDirectWrite, "Calibri", 96 * sizeX / 1920) {
+            _textFormat = _textFormat ?? new TextFormat(renderParams.DirectXResources.FactoryDirectWrite, "Calibri", 16 * sizeX / 1920) {
                 TextAlignment = TextAlignment.Center,
                 ParagraphAlignment = ParagraphAlignment.Center
             };
             if (_pathGeometry1 == null) InitPathGeometry(renderParams, sizeX);
 
             context2D.TextAntialiasMode = TextAntialiasMode.Grayscale;
-            context2D.Transform = Matrix.RotationZ((float)(Math.Cos(t * Tau / 2))) * Matrix.Translation(centerX, centerY, 0);
+            //context2D.Transform = Matrix.RotationZ((float)(Math.Cos(t * Tau / 2))) * Matrix.Translation(centerX, centerY, 0);
             context2D.DrawText(Message, _textFormat, new RectangleF(-sizeX / 2, -sizeY / 2, +sizeX / 2, sizeY / 2), _sceneColorBrush);
 
-            context2D.Transform =
-                  Matrix.Scaling((float)(Math.Cos(t * Tau / 4 * 0.25) / 4 + 0.75))
-                * Matrix.RotationZ(t / 2)
-                * Matrix.Translation(centerX, centerY, 0);
-            context2D.DrawGeometry(_pathGeometry1, this._sceneColorBrush, 2);
+            using (var brush = new SolidColorBrush(renderParams.DevicesAndContexts.ContextDirect2D, Color.White)) {
+                foreach (var c in AllCells) {
+                    var w = (float)renderParams.SizedDeviceResources.RenderTargetBounds.Width/CellColumnCount;
+                    var h = (float)renderParams.SizedDeviceResources.RenderTargetBounds.Height/CellRowCount;
+                    var cr = new RectangleF(w*c.X, h*c.Y, w*(c.X + 1), h*(c.Y + 1));
+                    context2D.DrawText(c.State == CellState.Empty ? "." : c.State.ToString(), _textFormat, cr, brush);
+                }
+            }
+            //context2D.Transform =
+            //      Matrix.Scaling((float)(Math.Cos(t * Tau / 4 * 0.25) / 4 + 0.75))
+            //    * Matrix.RotationZ(t / 2)
+            //    * Matrix.Translation(centerX, centerY, 0);
+            //context2D.DrawGeometry(_pathGeometry1, this._sceneColorBrush, 2);
 
             context2D.EndDraw();
         }
