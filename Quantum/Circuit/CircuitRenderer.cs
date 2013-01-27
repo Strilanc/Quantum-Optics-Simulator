@@ -65,8 +65,9 @@ namespace Quantum {
 
             g.Clear(Color.Black);
 
-            using (PathGeometry1 sineWave = new PathGeometry1(renderParams.DirectXResources.FactoryDirect2D),
-                                 cosineWave = new PathGeometry1(renderParams.DirectXResources.FactoryDirect2D)) {
+            var fac = renderParams.DirectXResources.FactoryDirect2D;
+            using (PathGeometry1 sineWave = new PathGeometry1(fac),
+                                 cosineWave = new PathGeometry1(fac)) {
                 const int Precision = 100;
 
                 // sine wave shape
@@ -97,14 +98,16 @@ namespace Quantum {
                 var h = (float)r.Height / CellRowCount;
                 using (SolidColorBrush white = new SolidColorBrush(g, Color.White),
                                        quasiGreen = new SolidColorBrush(g, new Color(0, 255, 0, 64)),
-                                       quasiRed = new SolidColorBrush(g, new Color(255, 0, 0, 64))) {
+                                       quasiRed = new SolidColorBrush(g, new Color(255, 0, 0, 64)),
+                                       quasiWhite = new SolidColorBrush(g, new Color(255, 255, 255, 64))) {
 
-                    _textFormat = _textFormat ?? new TextFormat(renderParams.DirectXResources.FactoryDirectWrite, "Calibri", 16 * (float)r.Width / 1920) {
+                    _textFormat = _textFormat ?? new TextFormat(renderParams.DirectXResources.FactoryDirectWrite, "Calibri", 16) {
                         TextAlignment = TextAlignment.Center,
-                        ParagraphAlignment = ParagraphAlignment.Center
+                        ParagraphAlignment = ParagraphAlignment.Center,
+                        WordWrapping = WordWrapping.Wrap
                     };
                     g.TextAntialiasMode = TextAntialiasMode.Grayscale;
-                    g.DrawText(_message, _textFormat, new RectangleF((float)r.Left, (float)r.Top, (float)r.Right, (float)r.Bottom), white);
+                    g.DrawText(_message, _textFormat, new RectangleF((float)r.Left, (float)r.Top, (float)r.Right, (float)r.Top + 60), white);
 
                     foreach (var p in Waves) {
                         var amps = (float)Math.Min(1, Math.Max(0, p.Item2.Magnitude));
@@ -135,8 +138,60 @@ namespace Quantum {
                     
                     g.Transform = Matrix.Identity;
                     foreach (var c in AllCells) {
-                        var cr = new RectangleF(w * c.X, h * c.Y, w * (c.X + 1), h * (c.Y + 1));
-                        g.DrawText(c.State == CellState.Empty ? "." : c.State.ToString(), _textFormat, cr, white);
+                        var center = new DrawingPointF(w*(c.X + 0.5f), h*(c.Y + 0.5f));
+                        var s = Math.Min(w, h);
+                        var vl = center.X - s / 3;
+                        var vt = center.Y - s / 3;
+                        var vr = center.X + s / 3;
+                        var vb = center.Y + s / 3;
+                        var vc = new RectangleF(vl, vt, vr, vb);
+                        switch (c.State) {
+                        case CellState.Empty:
+                            g.FillEllipse(new Ellipse(center, 1, 1), quasiWhite);
+                            break;
+                        case CellState.BackSlashMirror:
+                            g.DrawLine(new DrawingPointF(vl - 1, vt + 1), new DrawingPointF(vr - 1, vb + 1), white);
+                            g.DrawLine(new DrawingPointF(vl + 1, vt - 1), new DrawingPointF(vr + 1, vb - 1), white);
+                            break;
+                        case CellState.ForeSlashMirror:
+                            g.DrawLine(new DrawingPointF(vr - 1, vt - 1), new DrawingPointF(vl - 1, vb - 1), white);
+                            g.DrawLine(new DrawingPointF(vr + 1, vt + 1), new DrawingPointF(vl + 1, vb + 1), white);
+                            break;
+                        case CellState.BackSlashSplitter:
+                            g.FillRectangle(vc, quasiWhite);
+                            g.DrawRectangle(vc, white);
+                            g.DrawLine(new DrawingPointF(vl, vt), new DrawingPointF(vr, vb), white);
+                            break;
+                        case CellState.ForeSlashSplitter:
+                            g.FillRectangle(vc, quasiWhite);
+                            g.DrawRectangle(vc, white);
+                            g.DrawLine(new DrawingPointF(vr, vt), new DrawingPointF(vl, vb), white);
+                            break;
+                        case CellState.BackSlashPolarizer:
+                            g.FillRectangle(vc, quasiRed);
+                            g.FillRectangle(vc, quasiGreen);
+                            g.DrawLine(new DrawingPointF(vl, vt), new DrawingPointF(vr, vb), white);
+                            break;
+                        case CellState.ForeSlashPolarizer:
+                            g.FillRectangle(vc, quasiGreen);
+                            g.FillRectangle(vc, quasiRed);
+                            g.DrawLine(new DrawingPointF(vr, vt), new DrawingPointF(vl, vb), white);
+                            break;
+                        case CellState.HorizontalPolarizer:
+                            g.FillRectangle(vc, quasiGreen);
+                            g.DrawLine(new DrawingPointF(vl, center.Y), new DrawingPointF(vr, center.Y), white);
+                            break;
+                        case CellState.VerticalPolarizer:
+                            g.FillRectangle(vc, quasiRed);
+                            g.DrawLine(new DrawingPointF(center.X, vt), new DrawingPointF(center.X, vb), white);
+                            break;
+                        case CellState.DetectorTerminate:
+                            g.FillEllipse(new Ellipse(center, s/3, s/3), white);
+                            break;
+                        case CellState.DetectorPropagate:
+                            g.FillEllipse(new Ellipse(center, s/3, s/3), quasiWhite);
+                            break;
+                        }
                     }
                 }
             }
@@ -160,46 +215,46 @@ namespace Quantum {
                 AllCells
                 .Where(e => e.State != CellState.Empty)
                 .ToDictionary(e => new Position(e.X, e.Y), e => {
-                    Func<Photon, Superposition<Photon>> x;
+                    Func<Photon, Superposition<Photon>> fp;
                     if (e.State == CellState.BackSlashSplitter) {
-                        x = p => p.HalfSwapVelocity();
+                        fp = p => p.HalfSwapVelocity();
                     } else if (e.State == CellState.ForeSlashSplitter) {
-                        x = p => p.HalfNegateSwapVelocity();
+                        fp = p => p.HalfNegateSwapVelocity();
                     } else if (e.State == CellState.BackSlashMirror) {
-                        x = p => p.SwapVelocity();
+                        fp = p => p.SwapVelocity();
                     } else if (e.State == CellState.ForeSlashMirror) {
-                        x = p => p.SwapNegateVelocity();
+                        fp = p => p.SwapNegateVelocity();
                     } else {
-                        x = null;
+                        fp = null;
                     }
 
-                    Func<Photon, Superposition<May<Photon>>> x3;
-                    if (x != null) {
-                        x3 = p => x(p).Transform<May<Photon>>(v => v.Maybe());
+                    Func<Photon, Superposition<May<Photon>>> fm;
+                    if (fp != null) {
+                        fm = p => fp(p).Transform<May<Photon>>(v => v.Maybe());
                     } else if (e.State == CellState.ForeSlashPolarizer) {
-                        x3 = p => p.Polarize(new Polarization(Dir.FromVector(1, 1)));
+                        fm = p => p.Polarize(new Polarization(Dir.FromVector(1, 1)));
                     } else if (e.State == CellState.BackSlashPolarizer) {
-                        x3 = p => p.Polarize(new Polarization(Dir.FromVector(-1, 1)));
+                        fm = p => p.Polarize(new Polarization(Dir.FromVector(-1, 1)));
                     } else if (e.State == CellState.HorizontalPolarizer) {
-                        x3 = p => p.Polarize(new Polarization(Dir.FromVector(1, 0)));
+                        fm = p => p.Polarize(new Polarization(Dir.FromVector(1, 0)));
                     } else if (e.State == CellState.VerticalPolarizer) {
-                        x3 = p => p.Polarize(new Polarization(Dir.FromVector(0, 1)));
+                        fm = p => p.Polarize(new Polarization(Dir.FromVector(0, 1)));
                     } else {
-                        x3 = null;
+                        fm = null;
                     }
 
-                    Func<CircuitState, Superposition<CircuitState>> x2;
-                    if (x3 != null) {
-                        x2 = c => c.Photon.Match(p => x3(p).Transform<CircuitState>(p2 => c.WithPhoton(p2)), () => c.Super());
+                    Func<CircuitState, Superposition<CircuitState>> fc;
+                    if (fm != null) {
+                        fc = c => c.Photon.Match(p => fm(p).Transform<CircuitState>(p2 => c.WithPhoton(p2)), () => c.Super());
                     } else if (e.State == CellState.DetectorTerminate) {
-                        x2 = c => c.WithPhoton(May.NoValue);
+                        fc = c => c.WithPhoton(May.NoValue);
                     } else if (e.State == CellState.DetectorPropagate) {
-                        x2 = c => c.WithDetection(new Position(e.X, e.Y));
+                        fc = c => c.WithDetection(new Position(e.X, e.Y));
                     } else {
                         throw new NotImplementedException();
                     }
 
-                    return x2;
+                    return fc;
                 });
 
             var initialState = new CircuitState(TimeSpan.Zero, new Photon(new Position(0, 10), Velocity.PlusX, default(Polarization)));
@@ -227,14 +282,13 @@ namespace Quantum {
                         .Else(e.Super()));
                     var newState2 = newState.Transform(e =>
                         e.Photon
-                        .Where(p => p.Pos.X >= 0 && p.Pos.X < CellColumnCount && p.Pos.Y >= 0 && p.Pos.Y < CellRowCount)
-                        .Select(p => e.WithTick().Super())
+                        .Select(p => (p.Pos.X >= 0 && p.Pos.X < CellColumnCount && p.Pos.Y >= 0 && p.Pos.Y < CellRowCount ? e.WithTick() : e.WithPhoton(May.NoValue)).Super())
                         .Else(e.Super()));
                     if (Equals(state, newState2)) break;
                     state = newState2;
                     _message = state.ToString();
 
-                    if (s.ElapsedMilliseconds > 500) {
+                    if (s.ElapsedMilliseconds > 50) {
                         await Task.Yield();
                         s.Restart();
                     }
