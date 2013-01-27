@@ -15,18 +15,18 @@ namespace Circuit.Phys {
             this.Pol = pol;
         }
         public Superposition<Photon> SwapVelocity() {
-            return new Photon(this.Pos, new Velocity(this.Vel.Y, this.Vel.X), this.Pol).Super();
+            return new Photon(this.Pos, new Velocity(this.Vel.Y, this.Vel.X), this.Pol).Super() * Complex.ImaginaryOne;
         }
         public Superposition<Photon> SwapNegateVelocity() {
-            return new Photon(this.Pos, new Velocity(-this.Vel.Y, -this.Vel.X), this.Pol).Super();
+            return new Photon(this.Pos, new Velocity(-this.Vel.Y, -this.Vel.X), this.Pol).Super() * Complex.ImaginaryOne;
         }
         public Superposition<Photon> HalfSwapVelocity() {
             return this.Super()
-                   | SwapVelocity() * Complex.ImaginaryOne;
+                   | SwapVelocity();
         }
         public Superposition<Photon> HalfNegateSwapVelocity() {
             return this.Super()
-                   | SwapNegateVelocity() * Complex.ImaginaryOne;
+                   | SwapNegateVelocity();
         }
         public Superposition<May<Photon>> Polarize(Polarization polarizer) {
             var turn = polarizer.Dir - Pol.Dir;

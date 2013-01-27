@@ -66,36 +66,32 @@ namespace Quantum {
             g.Clear(Color.Black);
 
             var fac = renderParams.DirectXResources.FactoryDirect2D;
-            using (PathGeometry1 sineWave = new PathGeometry1(fac),
-                                 cosineWave = new PathGeometry1(fac)) {
-                const int Precision = 100;
-
-                // sine wave shape
-                var pathSink = sineWave.Open();
-                pathSink.BeginFigure(new DrawingPointF(0, Precision / 2.0f), FigureBegin.Filled);
-                foreach (var i in Precision.Range()) {
-                    var x = i + 1.0f;
-                    var y = Precision * (float)(Math.Sin(x / Precision * Tau) + 1) / 2;
-                    pathSink.AddLine(new DrawingPointF(x, y));
+            var sineWavesTrace = new PathGeometry1[4];
+            var sineWavesFill = new PathGeometry1[4];
+            const int Precision = 100;
+            foreach (var o in 4.Range()) {
+                sineWavesTrace[o] = new PathGeometry1(fac);
+                sineWavesFill[o] = new PathGeometry1(fac);
+                var pathSinkTrace = sineWavesTrace[o].Open();
+                var pathSinkFill = sineWavesFill[o].Open();
+                pathSinkTrace.BeginFigure(new DrawingPointF(0, Precision*(float)(Math.Sin(0.25*o*Tau) + 1)/2), FigureBegin.Hollow);
+                pathSinkFill.BeginFigure(new DrawingPointF(0, Precision / 2.0f), FigureBegin.Filled);
+                foreach (var i in (Precision+1).Range()) {
+                    var x = (float)i;
+                    var y = Precision*(float)(Math.Sin((x/Precision + 0.25*o)*Tau) + 1)/2;
+                    pathSinkTrace.AddLine(new DrawingPointF(x, y));
+                    pathSinkFill.AddLine(new DrawingPointF(x, y));
                 }
-                pathSink.EndFigure(FigureEnd.Open);
-                pathSink.Close();
-
-                // cosine wave shape
-                pathSink = cosineWave.Open();
-                pathSink.BeginFigure(new DrawingPointF(0, Precision / 2.0f), FigureBegin.Filled);
-                foreach (var i in Precision.Range()) {
-                    var x = i + 1.0f;
-                    var y = Precision * (float)(Math.Cos(x / Precision * Tau) + 1) / 2;
-                    pathSink.AddLine(new DrawingPointF(x, y));
-                }
-                pathSink.AddLine(new DrawingPointF(Precision, Precision / 2.0f));
-                pathSink.EndFigure(FigureEnd.Open);
-                pathSink.Close();
-
+                pathSinkFill.AddLine(new DrawingPointF(Precision, Precision / 2.0f));
+                pathSinkTrace.EndFigure(FigureEnd.Open);
+                pathSinkFill.EndFigure(FigureEnd.Open);
+                pathSinkTrace.Close();
+                pathSinkFill.Close();
+            }
+            try {
                 var r = renderParams.SizedDeviceResources.RenderTargetBounds;
-                var w = (float)r.Width / CellColumnCount;
-                var h = (float)r.Height / CellRowCount;
+                var w = (float)r.Width/CellColumnCount;
+                var h = (float)r.Height/CellRowCount;
                 using (SolidColorBrush white = new SolidColorBrush(g, Color.White),
                                        quasiGreen = new SolidColorBrush(g, new Color(0, 255, 0, 64)),
                                        quasiRed = new SolidColorBrush(g, new Color(255, 0, 0, 64)),
@@ -115,35 +111,38 @@ namespace Quantum {
                         var x = w*(p.Item1.Pos.X + 0.5f);
                         var y = h*(p.Item1.Pos.Y + 0.5f);
 
+                        var phase = (int)Math.Round(p.Item2.Phase/Tau*4) & 3;
+                        
                         g.Transform =
-                              Matrix.Scaling(1.0f / Precision)
-                            * Matrix.Translation(0, -0.5f, 0)
-                            * Matrix.Scaling(1, amps * (float)p.Item1.Pol.Dir.UnitX, 1)
-                            * Matrix.RotationZ(rot)
-                            * Matrix.Scaling(w, h, 1)
-                            * Matrix.Translation(x, y, 0);
-                        g.FillGeometry(sineWave, quasiGreen);
-                        g.DrawGeometry(sineWave, white);
+                            Matrix.Scaling(1.0f/Precision)
+                            *Matrix.Translation(0, -0.5f, 0)
+                            *Matrix.Scaling(1, amps*(float)p.Item1.Pol.Dir.UnitX, 1)
+                            *Matrix.RotationZ(rot)
+                            *Matrix.Scaling(w, h, 1)
+                            *Matrix.Translation(x, y, 0);
+                        g.FillGeometry(sineWavesFill[phase], quasiGreen);
+                        g.DrawGeometry(sineWavesTrace[phase], white);
 
                         g.Transform =
-                              Matrix.Scaling(1.0f / Precision)
-                            * Matrix.Translation(0, -0.5f, 0)
-                            * Matrix.Scaling(1, amps * (float)p.Item1.Pol.Dir.UnitY, 1)
-                            * Matrix.RotationZ(rot)
-                            * Matrix.Scaling(w, h, 1)
-                            * Matrix.Translation(x, y, 0);
-                        g.FillGeometry(cosineWave, quasiRed);
-                        g.DrawGeometry(cosineWave, white);
+                            Matrix.Scaling(1.0f/Precision)
+                            *Matrix.Translation(0, -0.5f, 0)
+                            *Matrix.Scaling(1, amps*(float)p.Item1.Pol.Dir.UnitY, 1)
+                            *Matrix.RotationZ(rot)
+                            *Matrix.Scaling(w, h, 1)
+                            *Matrix.Translation(x, y, 0);
+                        var p1 = (phase + 1) & 3;
+                        g.FillGeometry(sineWavesFill[p1], quasiRed);
+                        g.DrawGeometry(sineWavesTrace[p1], white);
                     }
-                    
+
                     g.Transform = Matrix.Identity;
                     foreach (var c in AllCells) {
                         var center = new DrawingPointF(w*(c.X + 0.5f), h*(c.Y + 0.5f));
                         var s = Math.Min(w, h);
-                        var vl = center.X - s / 3;
-                        var vt = center.Y - s / 3;
-                        var vr = center.X + s / 3;
-                        var vb = center.Y + s / 3;
+                        var vl = center.X - s/3;
+                        var vt = center.Y - s/3;
+                        var vr = center.X + s/3;
+                        var vb = center.Y + s/3;
                         var vc = new RectangleF(vl, vt, vr, vb);
                         switch (c.State) {
                         case CellState.Empty:
@@ -194,6 +193,9 @@ namespace Quantum {
                         }
                     }
                 }
+            } finally {
+                foreach (var e in sineWavesTrace) e.Dispose();
+                foreach (var e in sineWavesFill) e.Dispose();
             }
 
             g.EndDraw();
