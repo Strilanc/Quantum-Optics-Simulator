@@ -108,4 +108,10 @@ public static class Util {
         if (!dictionary.TryGetValue(key, out v)) return null;
         return v;
     }
+    public static double LerpTo(this double d1, double d2, double p) {
+        return d1 * (1 - p) + d2 * p;
+    }
+    public static float LerpTo(this float d1, float d2, float p) {
+        return d1 * (1 - p) + d2 * p;
+    }
 }

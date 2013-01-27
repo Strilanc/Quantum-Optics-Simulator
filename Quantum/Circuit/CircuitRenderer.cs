@@ -102,10 +102,10 @@ namespace Quantum {
             var r = renderParams.SizedDeviceResources.RenderTargetBounds;
             var sizeX = (float)r.Width;
             var sizeY = (float)r.Height;
-            var centerX = (float)(r.X + sizeX / 2);
-            var centerY = (float)(r.Y + sizeY / 2);
+            var centerX = (float)(r.X + sizeX/2);
+            var centerY = (float)(r.Y + sizeY/2);
 
-            _textFormat = _textFormat ?? new TextFormat(renderParams.DirectXResources.FactoryDirectWrite, "Calibri", 16 * sizeX / 1920) {
+            _textFormat = _textFormat ?? new TextFormat(renderParams.DirectXResources.FactoryDirectWrite, "Calibri", 16*sizeX/1920) {
                 TextAlignment = TextAlignment.Center,
                 ParagraphAlignment = ParagraphAlignment.Center
             };
@@ -113,33 +113,74 @@ namespace Quantum {
 
             context2D.TextAntialiasMode = TextAntialiasMode.Grayscale;
             //context2D.Transform = Matrix.RotationZ((float)(Math.Cos(t * Tau / 2))) * Matrix.Translation(centerX, centerY, 0);
-            context2D.DrawText(Message, _textFormat, new RectangleF(-sizeX / 2, -sizeY / 2, +sizeX / 2, sizeY / 2), _sceneColorBrush);
+            context2D.DrawText(Message, _textFormat, new RectangleF(-sizeX/2, -sizeY/2, +sizeX/2, sizeY/2), _sceneColorBrush);
 
-            using (var brush = new SolidColorBrush(renderParams.DevicesAndContexts.ContextDirect2D, Color.White)) {
-                using (var brush2 = new SolidColorBrush(renderParams.DevicesAndContexts.ContextDirect2D, new Color(0,255,0,64))) {
-                    var w = (float)renderParams.SizedDeviceResources.RenderTargetBounds.Width / CellColumnCount;
-                    var h = (float)renderParams.SizedDeviceResources.RenderTargetBounds.Height / CellRowCount;
-                    
+            using (PathGeometry1 sineWave = new PathGeometry1(renderParams.DirectXResources.FactoryDirect2D),
+                                 cosineWave = new PathGeometry1(renderParams.DirectXResources.FactoryDirect2D)) {
+                const int ni = 100;
+                var pathSink = sineWave.Open();
+                pathSink.BeginFigure(new DrawingPointF(0, 0.5f*100), FigureBegin.Filled);
+                foreach (var i in ni.Range()) {
+                    var x = ((float)i+1)/ni;
+                    var y = (float)Math.Sin(x * Tau) * 0.5f + 0.5f;
+                    pathSink.AddLine(new DrawingPointF(100 * x, 100 * y));
+                }
+                pathSink.EndFigure(FigureEnd.Open);
+                pathSink.Close();
+
+                pathSink = cosineWave.Open();
+                pathSink.BeginFigure(new DrawingPointF(0, 0), FigureBegin.Filled);
+                foreach (var i in ni.Range()) {
+                    var x = ((float)i+1)/ni;
+                    var y = (float)Math.Cos(x * Tau) * 0.5f + 0.5f;
+                    pathSink.AddLine(new DrawingPointF(100 * x, 100 * y));
+                }
+                pathSink.EndFigure(FigureEnd.Open);
+                pathSink.Close();
+
+                var w = (float)renderParams.SizedDeviceResources.RenderTargetBounds.Width / CellColumnCount;
+                var h = (float)renderParams.SizedDeviceResources.RenderTargetBounds.Height / CellRowCount;
+                using (SolidColorBrush brush = new SolidColorBrush(renderParams.DevicesAndContexts.ContextDirect2D, Color.White),
+                                       brush2 = new SolidColorBrush(renderParams.DevicesAndContexts.ContextDirect2D, new Color(0, 255, 0, 64)),
+                                       brush3 = new SolidColorBrush(renderParams.DevicesAndContexts.ContextDirect2D, new Color(255, 0, 0, 64))) {
+
                     foreach (var p in Waves) {
-                        var a = (float)Math.Min(1, Math.Max(0, p.Item2.Magnitude)) / 2;
+                        var a = (float)Math.Min(1, Math.Max(0, p.Item2.Magnitude));
                         var c = p.Item1.Pos;
                         var v = p.Item1.Vel;
-                        var cr2 = new RectangleF(w * (c.X - v.X / 2.0f + 0.5f - a), h * (c.Y - v.Y / 2.0f + 0.5f - a), w * (c.X - v.X / 2.0f + .5f + a), h * (c.Y - v.Y / 2.0f + 0.5f + a));
-                        context2D.FillRectangle(cr2, brush2);
-                        context2D.DrawRectangle(cr2, brush);
-                    }
+                        var x1 = w*(c.X - v.X + 0.5f);
+                        var y1 = h*(c.Y - v.Y + 0.5f);
+                        var x2 = w*(c.X + 0.5f);
+                        var y2 = h*(c.Y + 0.5f);
 
+                        context2D.Transform =
+                              Matrix.Scaling(1 / 100.0f)
+                            * Matrix.Translation(0, -0.5f, 0)
+                            * Matrix.Scaling(1, a * a * (float)p.Item1.Pol.Dir.UnitX, 1)
+                            * Matrix.RotationZ((float)Dir.FromVector(v.X, v.Y).SignedNaturalAngle)
+                            * Matrix.Scaling(w, h, 1)
+                            * Matrix.Translation(x1, y1, 0);
+                        context2D.FillGeometry(sineWave, brush2);
+                        context2D.DrawGeometry(sineWave, brush);
+
+                        context2D.Transform =
+                              Matrix.Scaling(1 / 100.0f)
+                            * Matrix.Translation(0, -0.5f, 0)
+                            * Matrix.Scaling(1, a * a * (float)p.Item1.Pol.Dir.UnitY, 1)
+                            * Matrix.RotationZ((float)Dir.FromVector(v.X, v.Y).SignedNaturalAngle)
+                            * Matrix.Scaling(w, h, 1)
+                            * Matrix.Translation(x1, y1, 0);
+                        context2D.FillGeometry(cosineWave, brush3);
+                        context2D.DrawGeometry(cosineWave, brush);
+                    }
+                    
+                    context2D.Transform = Matrix.Identity;
                     foreach (var c in AllCells) {
                         var cr = new RectangleF(w * c.X, h * c.Y, w * (c.X + 1), h * (c.Y + 1));
                         context2D.DrawText(c.State == CellState.Empty ? "." : c.State.ToString(), _textFormat, cr, brush);
                     }
                 }
             }
-            //context2D.Transform =
-            //      Matrix.Scaling((float)(Math.Cos(t * Tau / 4 * 0.25) / 4 + 0.75))
-            //    * Matrix.RotationZ(t / 2)
-            //    * Matrix.Translation(centerX, centerY, 0);
-            //context2D.DrawGeometry(_pathGeometry1, this._sceneColorBrush, 2);
 
             context2D.EndDraw();
         }
