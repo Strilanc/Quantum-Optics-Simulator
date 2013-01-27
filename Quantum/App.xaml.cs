@@ -14,7 +14,7 @@ namespace Quantum {
         }
 
         protected override void OnLaunched(LaunchActivatedEventArgs args) {
-            var shapeRenderer = new CircuitRenderer { Show = true, EnableClear = true };
+            var shapeRenderer = new CircuitRenderer();
             var content = new MainPage(shapeRenderer);
             Window.Current.Content = content;
             Window.Current.Activate();

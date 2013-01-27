@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
+using System.Threading.Tasks;
 using Circuit.Phys;
 using SharpDX;
 using SharpDX.Direct2D1;
@@ -10,11 +11,12 @@ using SharpDX.DirectWrite;
 using Strilanc.Angle;
 using Strilanc.LinqToCollections;
 using Strilanc.Value;
+using TwistedOak.Util;
 using Matrix = SharpDX.Matrix;
 using TextAntialiasMode = SharpDX.Direct2D1.TextAntialiasMode;
 
 namespace Quantum {
-    public class CircuitRenderer {
+    public sealed class CircuitRenderer {
         public enum CellState {
             Empty,
             BackSlashSplitter,
@@ -42,15 +44,9 @@ namespace Quantum {
 
         private const float Tau = (float)Math.PI * 2;
         private TextFormat _textFormat;
-        private Brush _sceneColorBrush;
-        private PathGeometry1 _pathGeometry1;
-        private Stopwatch _clock;
-        private string Message = "";
+        private string _message = "";
 
         public CircuitRenderer() {
-            EnableClear = true;
-            Show = true;
-
             _cells = new Cell[CellColumnCount, CellRowCount];
             foreach (var i in CellColumnCount.Range()) {
                 foreach (var j in CellRowCount.Range()) {
@@ -60,32 +56,14 @@ namespace Quantum {
             ComputeCircuit();
         }
 
-        public bool EnableClear { get; set; }
-
-        public bool Show { get; set; }
-
-        public virtual void Initialize(DeviceContext contextD2D) {
-            this._sceneColorBrush = new SolidColorBrush(contextD2D, Color.Red);
-
-            this._clock = Stopwatch.StartNew();
+        public void Initialize(DeviceContext contextD2D) {
         }
 
-        public virtual void Render(RenderParams renderParams) {
-            var t = (float)_clock.Elapsed.TotalSeconds;
-            if (!Show) return;
+        public void Render(RenderParams renderParams) {
+            var g = renderParams.DevicesAndContexts.ContextDirect2D;
+            g.BeginDraw();
 
-            var context2D = renderParams.DevicesAndContexts.ContextDirect2D;
-            context2D.BeginDraw();
-
-            if (EnableClear) context2D.Clear(Color.Black);
-
-            var r = renderParams.SizedDeviceResources.RenderTargetBounds;
-            _textFormat = _textFormat ?? new TextFormat(renderParams.DirectXResources.FactoryDirectWrite, "Calibri", 16*(float)r.Width/1920) {
-                TextAlignment = TextAlignment.Center,
-                ParagraphAlignment = ParagraphAlignment.Center
-            };
-            context2D.TextAntialiasMode = TextAntialiasMode.Grayscale;
-            context2D.DrawText(Message, _textFormat, new RectangleF((float)r.Left, (float)r.Top, (float)r.Right, (float)r.Bottom), _sceneColorBrush);
+            g.Clear(Color.Black);
 
             using (PathGeometry1 sineWave = new PathGeometry1(renderParams.DirectXResources.FactoryDirect2D),
                                  cosineWave = new PathGeometry1(renderParams.DirectXResources.FactoryDirect2D)) {
@@ -114,11 +92,19 @@ namespace Quantum {
                 pathSink.EndFigure(FigureEnd.Open);
                 pathSink.Close();
 
-                var w = (float)renderParams.SizedDeviceResources.RenderTargetBounds.Width / CellColumnCount;
-                var h = (float)renderParams.SizedDeviceResources.RenderTargetBounds.Height / CellRowCount;
-                using (SolidColorBrush brush = new SolidColorBrush(renderParams.DevicesAndContexts.ContextDirect2D, Color.White),
-                                       brush2 = new SolidColorBrush(renderParams.DevicesAndContexts.ContextDirect2D, new Color(0, 255, 0, 64)),
-                                       brush3 = new SolidColorBrush(renderParams.DevicesAndContexts.ContextDirect2D, new Color(255, 0, 0, 64))) {
+                var r = renderParams.SizedDeviceResources.RenderTargetBounds;
+                var w = (float)r.Width / CellColumnCount;
+                var h = (float)r.Height / CellRowCount;
+                using (SolidColorBrush white = new SolidColorBrush(g, Color.White),
+                                       quasiGreen = new SolidColorBrush(g, new Color(0, 255, 0, 64)),
+                                       quasiRed = new SolidColorBrush(g, new Color(255, 0, 0, 64))) {
+
+                    _textFormat = _textFormat ?? new TextFormat(renderParams.DirectXResources.FactoryDirectWrite, "Calibri", 16 * (float)r.Width / 1920) {
+                        TextAlignment = TextAlignment.Center,
+                        ParagraphAlignment = ParagraphAlignment.Center
+                    };
+                    g.TextAntialiasMode = TextAntialiasMode.Grayscale;
+                    g.DrawText(_message, _textFormat, new RectangleF((float)r.Left, (float)r.Top, (float)r.Right, (float)r.Bottom), white);
 
                     foreach (var p in Waves) {
                         var amps = (float)Math.Min(1, Math.Max(0, p.Item2.Magnitude));
@@ -126,36 +112,36 @@ namespace Quantum {
                         var x = w*(p.Item1.Pos.X + 0.5f);
                         var y = h*(p.Item1.Pos.Y + 0.5f);
 
-                        context2D.Transform =
+                        g.Transform =
                               Matrix.Scaling(1.0f / Precision)
                             * Matrix.Translation(0, -0.5f, 0)
-                            * Matrix.Scaling(1, amps * amps * (float)p.Item1.Pol.Dir.UnitX, 1)
+                            * Matrix.Scaling(1, amps * (float)p.Item1.Pol.Dir.UnitX, 1)
                             * Matrix.RotationZ(rot)
                             * Matrix.Scaling(w, h, 1)
                             * Matrix.Translation(x, y, 0);
-                        context2D.FillGeometry(sineWave, brush2);
-                        context2D.DrawGeometry(sineWave, brush);
+                        g.FillGeometry(sineWave, quasiGreen);
+                        g.DrawGeometry(sineWave, white);
 
-                        context2D.Transform =
+                        g.Transform =
                               Matrix.Scaling(1.0f / Precision)
                             * Matrix.Translation(0, -0.5f, 0)
-                            * Matrix.Scaling(1, amps * amps * (float)p.Item1.Pol.Dir.UnitY, 1)
+                            * Matrix.Scaling(1, amps * (float)p.Item1.Pol.Dir.UnitY, 1)
                             * Matrix.RotationZ(rot)
                             * Matrix.Scaling(w, h, 1)
                             * Matrix.Translation(x, y, 0);
-                        context2D.FillGeometry(cosineWave, brush3);
-                        context2D.DrawGeometry(cosineWave, brush);
+                        g.FillGeometry(cosineWave, quasiRed);
+                        g.DrawGeometry(cosineWave, white);
                     }
                     
-                    context2D.Transform = Matrix.Identity;
+                    g.Transform = Matrix.Identity;
                     foreach (var c in AllCells) {
                         var cr = new RectangleF(w * c.X, h * c.Y, w * (c.X + 1), h * (c.Y + 1));
-                        context2D.DrawText(c.State == CellState.Empty ? "." : c.State.ToString(), _textFormat, cr, brush);
+                        g.DrawText(c.State == CellState.Empty ? "." : c.State.ToString(), _textFormat, cr, white);
                     }
                 }
             }
 
-            context2D.EndDraw();
+            g.EndDraw();
         }
         private IEnumerable<Cell> AllCells {
             get {
@@ -164,7 +150,12 @@ namespace Quantum {
                        select _cells[i, j];
             }
         }
-        public void ComputeCircuit() {
+        private readonly LifetimeExchanger _computeLifeExchanger = new LifetimeExchanger();
+        public async void ComputeCircuit() {
+            var life = _computeLifeExchanger.StartNextAndEndPreviousLifetime();
+            var s = new Stopwatch();
+            s.Start();
+
             var elements =
                 AllCells
                 .Where(e => e.State != CellState.Empty)
@@ -218,7 +209,7 @@ namespace Quantum {
             try {
                 var state = initialState.Super();
                 var n = 0;
-                while (true) {
+                while (!life.IsDead) {
                     n += 1;
                     if (n > 10000) throw new InvalidOperationException("Overcompute");
                     foreach (var e in state.Amplitudes) {
@@ -241,10 +232,17 @@ namespace Quantum {
                         .Else(e.Super()));
                     if (Equals(state, newState2)) break;
                     state = newState2;
+                    _message = state.ToString();
+
+                    if (s.ElapsedMilliseconds > 500) {
+                        await Task.Yield();
+                        s.Restart();
+                    }
                 }
-                Message = state.ToString();
+                if (!life.IsDead)
+                    _message = state.ToString();
             } catch (Exception ex) {
-                Message = ex.ToString();
+                _message = ex.ToString();
             }
         }
     }
