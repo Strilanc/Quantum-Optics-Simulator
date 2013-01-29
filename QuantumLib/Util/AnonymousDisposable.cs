@@ -11,6 +11,10 @@ public sealed class AnonymousDisposable : IDisposable {
     private readonly Action _action;
     private readonly OnetimeLock _canDisposeLock = new OnetimeLock();
     public bool IsDisposed { get { return _canDisposeLock.IsAcquired(); } }
+    /// <summary>
+    /// Creates an anonymous disposable, that will call the given action, when disposed for the first time.
+    /// Defaults to doing nothing on disposal, when a null action is given.
+    /// </summary>
     public AnonymousDisposable(Action action = null) {
         this._action = action ?? (() => { });
     }

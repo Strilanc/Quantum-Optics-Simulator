@@ -127,10 +127,6 @@
     <Compile Include="Prog\Util.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Circuit\CircuitRenderer.cs" />
-    <Compile Include="Util\AnonymousDisposable.cs" />
-    <Compile Include="Util\IObservableLatest.cs" />
-    <Compile Include="Util\ObservableValue.cs" />
-    <Compile Include="Util\OnetimeLock.cs" />
     <Compile Include="Util\UIUtil.cs" />
     <Compile Include="Util\Util.cs" />
   </ItemGroup>
@@ -207,6 +203,12 @@
     <Reference Include="Validation">
       <HintPath>..\packages\Validation.2.0.2.13022\lib\portable-windows8+net40+sl5+windowsphone8\Validation.dll</HintPath>
     </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\QuantumLib\QuantumLib.csproj">
+      <Project>{dbdc348d-c15b-4f6a-b236-510a18804691}</Project>
+      <Name>QuantumLib</Name>
+    </ProjectReference>
   </ItemGroup>
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '11.0' ">
     <VisualStudioVersion>11.0</VisualStudioVersion>

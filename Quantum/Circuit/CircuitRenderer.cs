@@ -290,7 +290,7 @@ namespace Quantum {
                     state = newState2;
                     _message = state.ToString();
 
-                    if (s.ElapsedMilliseconds > 50) {
+                    if (s.ElapsedMilliseconds > 1) {
                         await Task.Yield();
                         s.Restart();
                     }
