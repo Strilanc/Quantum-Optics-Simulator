@@ -2,19 +2,17 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-using System.Reflection;
 using Strilanc.LinqToCollections;
+using Strilanc.Value;
 
 public static class Util {
     private const double Tau = Math.PI*2;
     public static Complex Sum(this IEnumerable<Complex> sequence) {
+        if (sequence == null) throw new ArgumentNullException("sequence");
         return sequence.Aggregate(Complex.Zero, (a, e) => a + e);
     }
     public static Complex Dot(this IReadOnlyList<Complex> vector1, IReadOnlyList<Complex> vector2) {
         return vector1.Zip(vector2, (e1, e2) => e1*e2).Sum();
-    }
-    public static F Get<T, F>(this T instance, MockProperty<T, F> property) {
-        return property.GetValue(instance);
     }
     public static IReadOnlyList<T> PaddedTo<T>(this IReadOnlyList<T> items, int minCount, T padding = default(T)) {
         return new AnonymousReadOnlyList<T>(
@@ -23,9 +21,6 @@ public static class Util {
     }
     public static string StringJoin<T>(this IEnumerable<T> items, string separator) {
         return string.Join(separator, items);
-    }
-    public static T With<T, F>(this T instance, MockProperty<T, F> property, F field) {
-        return property.WithValue(instance, field);
     }
     public static object ToEquatable<T>(this IEnumerable<T> dic) {
         return new EquatableList<T>(dic.ToArray());
@@ -55,20 +50,6 @@ public static class Util {
             r == 0 ? (object)"" : r,
             i < 0 ? "-" : "+",
             i == 1 || i == -1 ? "i" : String.Format("{0:0.###}i", Math.Abs(i)));
-    }
-    public static string ReflectToString<T>(this T value) {
-        var fieldValues = typeof(T).GetRuntimeFields()
-            .Select(e => new KeyValuePair<string, object>(e.Name, e.GetValue(value)));
-        var getterValues = typeof(T).GetRuntimeProperties()
-            .Select(e => new KeyValuePair<string, object>(e.Name, e.GetValue(value)));
-        return String.Join(", ", fieldValues.Concat(getterValues).Select(e => {
-            if (Equals(e.Value, true)) return e.Key;
-            if (Equals(e.Value, false)) return null;
-            return String.Format("{0}: {1}", e.Key, e.Value);
-        }).Where(e => e != null));
-    }
-    public static Named<T> Named<T>(this T value, string name) {
-        return new Named<T>(value, name);
     }
     public static double SquaredMagnitude(this Complex complex) {
         return complex.Magnitude * complex.Magnitude;
@@ -103,11 +84,20 @@ public static class Util {
     public static IReadOnlyList<T> SingletonList<T>(this T item) {
         return ReadOnlyList.Singleton(item);
     }
-    public static V? TryGetValue<K, V>(this IReadOnlyDictionary<K, V> dictionary, K key) where V : struct {
-        V v;
-        if (!dictionary.TryGetValue(key, out v)) return null;
+    
+    public static May<TVal> MayGetValue<TKey, TVal>(this IReadOnlyDictionary<TKey, TVal> dictionary, TKey key) {
+        if (dictionary == null) throw new ArgumentNullException("dictionary");
+        TVal v;
+        if (!dictionary.TryGetValue(key, out v)) return May.NoValue;
         return v;
     }
+    public static May<TVal> MayGetValue<TKey, TVal>(this IDictionary<TKey, TVal> dictionary, TKey key) {
+        if (dictionary == null) throw new ArgumentNullException("dictionary");
+        TVal v;
+        if (!dictionary.TryGetValue(key, out v)) return May.NoValue;
+        return v;
+    }
+
     public static double LerpTo(this double d1, double d2, double p) {
         return d1 * (1 - p) + d2 * p;
     }

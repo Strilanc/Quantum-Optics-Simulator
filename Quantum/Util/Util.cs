@@ -1,24 +1,11 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Reactive;
 using System.Reactive.Subjects;
-using SharpDX;
 using System.Reactive.Linq;
-using Strilanc.Value;
 using TwistedOak.Collections;
 using TwistedOak.Util;
 
 public static class Util2 {
-    public static void DisposeUnlessNull(this IDisposable v) {
-        if (v != null) v.Dispose();
-    }
-    public static void NullSafeRemoveAndDispose<T>(this DisposeCollector collector, ref T r) {
-        if (ReferenceEquals(r, null)) return;
-        collector.RemoveAndDispose(ref r);
-    }
-    public static void NullSafeRemoveAndDispose<T>(this DisposeCollector collector, T r) {
-        collector.NullSafeRemoveAndDispose(ref r);
-    }
     public static void InvokeUnlessNull<T>(this Action<T> action, T arg) {
         if (action != null) action(arg);
     }
@@ -102,15 +89,6 @@ public static class Util2 {
     public static IObservable<T> WhereNotNull<T>(this IObservable<T?> observable) where T : struct {
         return observable.Where(e => e.HasValue).Select(e => e.Value);
     }
-    public static IObservable<T> When<T>(this IObservable<T> observable, Func<bool> filter) {
-        return observable.Where(e => filter());
-    }
-    public static IObservable<T> Overlap<T>(this IObservable<T> observable, IObservable<T> other) {
-        return new[] {observable, other}.ToObservable().SelectMany(e => e);
-    }
-    public static IObservable<Unit> ToUnitValues<T>(this IObservable<T> observable) {
-        return observable.Select(e => default(Unit));
-    }
 
     public static IObservableLatest<TOut> Consume<TIn, TOut>(this IObservable<TIn> observable, Func<TIn, TOut> projection) where TOut : IDisposable {
         return observable.SelectDefaultIfNull(projection).ConsumeIntoValueWithDisposal();
@@ -130,27 +108,6 @@ public static class Util2 {
         return new AnonymousObservableLatest<TOut>(
             observer => Observable.Select(observable, projection).Subscribe(observer),
             () => projection(observable.Current));
-    }
-    ///<summary>Returns an observable that pairs contiguous items from the given underlying observable.</summary>
-    public static IObservable<Transition<T>> Transitions<T>(this IObservable<T> observable) {
-        if (observable == null) throw new ArgumentNullException("observable");
-        return new AnonymousObservable<Transition<T>>(observer => {
-            var prev = May<T>.NoValue;
-            return observable.Synchronize().Subscribe(
-                newValue => {
-                    prev.IfHasValueThenDo(prevValue => observer.OnNext(new Transition<T>(prevValue, newValue)));
-                    prev = newValue;
-                },
-                observer.OnError,
-                observer.OnCompleted);
-        });
-    }
-    public static IObservable<T> CutShort<T>(this IObservable<T> observable, Lifetime lifetime) {
-        return new AnonymousObservable<T>(observer => {
-            var d = observable.Subscribe(observer);
-            lifetime.WhenDead(d.Dispose);
-            return d;
-        });
     }
     public static IObservable<T> WithInlineDisposalOnChange<T>(this IObservable<T> observable) where T : IDisposable {
         if (observable == null) throw new ArgumentNullException("observable");
@@ -236,38 +193,5 @@ public static class Util2 {
                 lock (syncRoot)
                     return state.ThrowIfDone();
             });
-    }
-}
-[DebuggerStepThrough]
-public sealed class AnonymousObservableLatest<T> : IObservableLatest<T> {
-    private readonly Func<IObserver<T>, IDisposable> _subsribe;
-    private readonly Func<T> _current;
-    public AnonymousObservableLatest(Func<IObserver<T>, IDisposable> subsribe, Func<T> current) {
-        if (subsribe == null) throw new ArgumentNullException("subsribe");
-        if (current == null) throw new ArgumentNullException("current");
-        _subsribe = subsribe;
-        _current = current;
-    }
-    public IDisposable Subscribe(IObserver<T> observer) {
-        if (observer == null) throw new ArgumentNullException("observer");
-        return _subsribe(observer);
-    }
-    public T Current { get { return _current(); } }
-}
-public struct ObservationState<T> {
-    public T Item;
-    public Exception Error;
-    public bool Completion;
-    public T ThrowIfDone() {
-        if (Completion || Error != null) throw new InvalidOperationException();
-        return Item;
-    }
-}
-public struct Transition<T> {
-    public readonly T Old;
-    public readonly T New;
-    public Transition(T old, T @new) {
-        this.Old = old;
-        this.New = @new;
     }
 }

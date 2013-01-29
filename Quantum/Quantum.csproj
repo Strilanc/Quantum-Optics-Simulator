@@ -122,11 +122,11 @@
     <Compile Include="Phys\Superposition.cs" />
     <Compile Include="Phys\Velocity.cs" />
     <Compile Include="Prog\EquatableList.cs" />
-    <Compile Include="Prog\MockProperty.cs" />
-    <Compile Include="Prog\Named.cs" />
     <Compile Include="Prog\Util.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Circuit\CircuitRenderer.cs" />
+    <Compile Include="Util\AnonymousObservableLatest.cs" />
+    <Compile Include="Util\ObservationState.cs" />
     <Compile Include="Util\UIUtil.cs" />
     <Compile Include="Util\Util.cs" />
   </ItemGroup>
