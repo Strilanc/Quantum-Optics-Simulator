@@ -26,6 +26,11 @@ public static class Util2 {
     public static int FloorInt(this double d) {
         return (int)Math.Floor(d);
     }
+    public static IObservable<T> Overlap<T>(this IObservable<T> observable, IObservable<T> other) {
+        if (observable == null) throw new ArgumentNullException("observable");
+        if (other == null) throw new ArgumentNullException("other");
+        return new[] { observable, other }.ToObservable().SelectMany(e => e);
+    }
     public static IObservable<T> TakeUntilDead<T>(this IObservable<T> observable, Lifetime lifetime) {
         if (observable == null) throw new ArgumentNullException("observable");
         
