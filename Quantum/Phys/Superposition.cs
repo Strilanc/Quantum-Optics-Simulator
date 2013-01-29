@@ -72,17 +72,17 @@ public struct Superposition<T> {
     }
 
     public override string ToString() {
-        return String.Join(
-            " + ",
+        return 
             Amplitudes
-                .Select(pair => {
-                    if (pair.Value == 0) return null;
-                    if (pair.Value == 1) return String.Format("|{0}>", pair.Key);
-                    var s = pair.Value.ToPrettyString();
-                    if (s.Contains("+") || s.Contains("-")) s = "(" + s + ")";
-                    return String.Format("{1} |{0}>", pair.Key, s);
-                })
-                .Where(e => e != null));
+            .Select(pair => {
+                if (pair.Value == 0) return null;
+                if (pair.Value == 1) return string.Format("|{0}>", pair.Key);
+                var s = pair.Value.ToPrettyString();
+                if (pair.Value.Real != 0 && pair.Value.Imaginary != 0) s = "(" + s + ")";
+                return string.Format("{1} |{0}>", pair.Key, s);
+            })
+            .Where(e => e != null)
+            .StringJoin(" + ");
     }
     public object Identity { get { return Amplitudes.ToEquatable(); } }
     public override int GetHashCode() {

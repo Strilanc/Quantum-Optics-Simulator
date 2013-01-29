@@ -29,6 +29,6 @@ public struct ComplexVector {
         return new ComplexVector(vector1.Values.Zip(vector2.Values, (e1, e2) => e1 + e2).ToArray());
     }
     public override string ToString() {
-        return String.Format("<{0}>", String.Join(", ", Values.Select(e => e.ToPrettyString())));
+        return String.Format("<{0}>", Values.Select(e => e.ToPrettyString()).StringJoin(", "));
     }
-}    
+}

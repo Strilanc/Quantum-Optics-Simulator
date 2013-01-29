@@ -87,7 +87,7 @@ public static class Util2 {
         return observable.Where(e => !ReferenceEquals(e, null));
     }
     public static IObservable<T> WhereNotNull<T>(this IObservable<T?> observable) where T : struct {
-        return observable.Where(e => e.HasValue).Select(e => e.Value);
+        return observable.Where(e => e.HasValue).Select(e => e.GetValueOrDefault());
     }
 
     public static IObservableLatest<TOut> Consume<TIn, TOut>(this IObservable<TIn> observable, Func<TIn, TOut> projection) where TOut : IDisposable {

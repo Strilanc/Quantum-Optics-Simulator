@@ -6,7 +6,6 @@ using Strilanc.LinqToCollections;
 using Strilanc.Value;
 
 public static class Util {
-    private const double Tau = Math.PI*2;
     public static Complex Sum(this IEnumerable<Complex> sequence) {
         if (sequence == null) throw new ArgumentNullException("sequence");
         return sequence.Aggregate(Complex.Zero, (a, e) => a + e);
@@ -20,22 +19,14 @@ public static class Util {
             i => i < items.Count ? items[i] : padding);
     }
     public static string StringJoin<T>(this IEnumerable<T> items, string separator) {
+        if (items == null) throw new ArgumentNullException("items");
         return string.Join(separator, items);
     }
-    public static object ToEquatable<T>(this IEnumerable<T> dic) {
-        return new EquatableList<T>(dic.ToArray());
+    public static object ToEquatable<T>(this IEnumerable<T> items) {
+        return new EquatableList<T>(items.ToArray());
     }
-    public static object ToEquatable<K, V>(this IReadOnlyDictionary<K, V> dic) {
+    public static object ToEquatable<TKey, TVal>(this IReadOnlyDictionary<TKey, TVal> dic) {
         return new EquatableList<object>(dic.OrderBy(e => e.Key.GetHashCode()).Select(e => (object)e).ToArray());
-    }
-    public static IReadOnlyDictionary<K, V> WithDefaultResult<K, V>(this IReadOnlyDictionary<K, V> dic, V def = default(V)) {
-        return new AnonymousReadOnlyDictionary<K, V>(
-            () => dic.Count,
-            dic.Keys,
-            (K k, out V v) => {
-                if (!dic.TryGetValue(k, out v)) v = def;
-                return true;
-            });
     }
     public static string ToPrettyString(this Complex c) {
         var r = c.Real;
