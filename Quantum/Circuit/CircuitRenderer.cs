@@ -63,7 +63,7 @@ namespace Quantum {
             var g = renderParams.DevicesAndContexts.ContextDirect2D;
             g.BeginDraw();
 
-            g.Clear(Color.Black);
+            g.Clear(Color.White);
 
             var fac = renderParams.DirectXResources.FactoryDirect2D;
             var sineWavesTrace = new PathGeometry1[4];
@@ -92,10 +92,10 @@ namespace Quantum {
                 var r = renderParams.SizedDeviceResources.RenderTargetBounds;
                 var w = (float)r.Width/CellColumnCount;
                 var h = (float)r.Height/CellRowCount;
-                using (SolidColorBrush white = new SolidColorBrush(g, Color.White),
-                                       quasiGreen = new SolidColorBrush(g, new Color(0, 255, 0, 64)),
-                                       quasiRed = new SolidColorBrush(g, new Color(255, 0, 0, 64)),
-                                       quasiWhite = new SolidColorBrush(g, new Color(255, 255, 255, 64))) {
+                using (SolidColorBrush white = new SolidColorBrush(g, Color.Black),
+                                       quasiGreen = new SolidColorBrush(g, new Color(0, 255, 0, 128)),
+                                       quasiRed = new SolidColorBrush(g, new Color(255, 0, 0, 128)),
+                                       quasiWhite = new SolidColorBrush(g, new Color(0, 0, 0, 64))) {
 
                     _textFormat = _textFormat ?? new TextFormat(renderParams.DirectXResources.FactoryDirectWrite, "Calibri", 16) {
                         TextAlignment = TextAlignment.Center,
@@ -146,7 +146,7 @@ namespace Quantum {
                         var vc = new RectangleF(vl, vt, vr, vb);
                         switch (c.State) {
                         case CellState.Empty:
-                            g.FillEllipse(new Ellipse(center, 1, 1), quasiWhite);
+                            //g.FillEllipse(new Ellipse(center, 1, 1), quasiWhite);
                             break;
                         case CellState.BackSlashMirror:
                             g.DrawLine(new DrawingPointF(vl - 1, vt + 1), new DrawingPointF(vr - 1, vb + 1), white);

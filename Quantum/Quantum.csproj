@@ -200,6 +200,9 @@
     <Reference Include="System.Reactive.Linq">
       <HintPath>..\packages\Rx-Linq.2.0.21114\lib\WinRT45\System.Reactive.Linq.dll</HintPath>
     </Reference>
+    <Reference Include="TwistedOakThreading">
+      <HintPath>..\packages\TwistedOak.Threading.1.0.0\lib\portable-net45+win8\TwistedOakThreading.dll</HintPath>
+    </Reference>
     <Reference Include="Validation">
       <HintPath>..\packages\Validation.2.0.2.13022\lib\portable-windows8+net40+sl5+windowsphone8\Validation.dll</HintPath>
     </Reference>
